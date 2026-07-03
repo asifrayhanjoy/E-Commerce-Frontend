@@ -1,6 +1,7 @@
 import React from "react"
 import "./global.css"
 import Header from "./shared/widgets/header/Header"
+import Providers from "./providers"
 
 
 
@@ -20,8 +21,10 @@ export default function RootLayout({
     <html lang="en">
       <body>
 
-        <Header></Header>
-        {children}
+        <Providers>
+          <Header></Header>
+          {children}
+        </Providers>
         </body>
     </html>
   )

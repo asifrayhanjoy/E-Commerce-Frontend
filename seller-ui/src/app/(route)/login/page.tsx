@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff } from "lucide-react";
-import axios, { Axios, AxiosError } from "axios";
-import GoogleButton from "@/components/auth/GoogleButton";
+import axios, { AxiosError } from "axios";
 import { useMutation } from "@tanstack/react-query";
 
 type FormData = {
@@ -16,7 +15,6 @@ type FormData = {
 
 const Login = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
   const { register, handleSubmit, formState: { errors }, } = useForm<FormData>();
@@ -27,13 +25,8 @@ const Login = () => {
       { withCredentials: true } );
       return response.data;
     },
-    onSuccess: (data) => {
-      setServerError(null);
+    onSuccess: () => {
       router.push("/");
-    },
-    onError: (error: AxiosError) => {
-      const errorMessage = (error.response?.data as { message?: string })?.message || "Invalid Credentials!";
-      setServerError(errorMessage);
     },
   });
 
@@ -61,21 +54,14 @@ const Login = () => {
           <p className="text-center text-gray-500 mb-4">
             Don&apos;t have an account?{" "}
             <Link href="/register" style={{ color: "#3b82f6" }} className="font-medium">
-              Sign up
+              Register
             </Link>
           </p>
-
-          <GoogleButton />
-
           <div className="flex items-center my-5 text-gray-400 text-sm">
             <div className="flex-1 border-t border-gray-300" />
             <span className="px-3">or Sign in with Email</span>
             <div className="flex-1 border-t border-gray-300" />
           </div>
-
-          {serverError && (
-            <p className="text-red-500 text-sm text-center mb-3">{serverError}</p>
-          )}
 
           <form onSubmit={handleSubmit(onSubmit)}>
             {/* Email */}
@@ -129,6 +115,13 @@ const Login = () => {
             <button type="submit" disabled={loginMutation.isPending} className="w-full bg-black text-white py-3 rounded-lg text-lg cursor-pointer hover:bg-gray-900 transition-colors disabled:opacity-60">
               {loginMutation?.isPending ? "Loggin in...": "Login"}
             </button>
+            {loginMutation.isError &&
+              loginMutation.error instanceof AxiosError && (
+                <p className="text-red-500 text-sm mt-2">
+                  {loginMutation.error.response?.data?.message ||
+                    loginMutation.error.message}
+                </p>
+              )}
           </form>
         </div>
       </div>

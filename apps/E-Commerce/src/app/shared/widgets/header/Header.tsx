@@ -5,6 +5,8 @@ import HeaderUser from "./HeaderUser";
 import HeaderBottom from "./header.bottom";
 
 export default function Header() {
+
+  
   return (
     <div className="w-full bg-white shadow-sm">
       <div className="w-[80%] mx-auto py-5 flex items-center justify-between">
