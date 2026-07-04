@@ -1,11 +1,14 @@
 "use client";
 
+import axios from "axios";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff, } from "lucide-react";
 import { countries } from "../../../utils/countries";
+import CreateShop from "./create-shop";
+import StripeLogo from "@/utils/StripeLogo";
+
 type FormData = {
   name: string;
   email: string;
@@ -24,11 +27,12 @@ const Register = () => {
   const [timer, setTimer] = useState(60);
   const [timerKey, setTimerKey] = useState(0);
   const [otp, setOtp] = useState(["", "", "", ""]);
-  const [userData, setUserData] = useState<FormData | null>(null);
+  const [SellerData, setSellerData] = useState<FormData | null>(null);
+  const [sellerId, setSellerId] = useState<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const router = useRouter();
 
-  const { register, handleSubmit, formState: { errors }, } = useForm<FormData>();
+  const { register, handleSubmit,
+    formState: { errors }, } = useForm<FormData>();
 
   // Countdown timer — restarts whenever OTP screen opens or resend triggered
   useEffect(() => {
@@ -50,7 +54,7 @@ const Register = () => {
   // Step 1 — Submit registration form → send OTP to email
   const onSubmit = async (data: FormData) => { setServerError(null); setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/register", {
+      const res = await fetch("http://localhost:8080/api/v1/auth/seller-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -59,12 +63,12 @@ const Register = () => {
           email: data.email,
           password: data.password,
           country: data.country,
-          phone: data.phone,
+          phone_number: data.phone,
         }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || "Failed to send OTP");
-      setUserData(data);
+      setSellerData(data);
       setShowOtp(true);
     } catch (err: unknown) {
       setServerError(err instanceof Error ? err.message : "Something went wrong");
@@ -93,19 +97,19 @@ const Register = () => {
 
   // Resend OTP — re-calls register endpoint after timer expires
   const resendOtp = async () => {
-    if (!canResend || !userData) return;
+    if (!canResend || !SellerData) return;
     setServerError(null);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/register", {
+      const res = await fetch("http://localhost:8080/api/v1/auth/seller-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          name: userData.name,
-          email: userData.email,
-          password: userData.password,
-          country: userData.country,
-          phone: userData.phone,
+          name: SellerData.name,
+          email: SellerData.email,
+          password: SellerData.password,
+          country: SellerData.country,
+          phone_number: SellerData.phone,
         }),
       });
       const result = await res.json();
@@ -117,11 +121,11 @@ const Register = () => {
     }
   };
 
-  // Step 2 — Verify OTP
-  // Correct OTP → create user → redirect to /login
+  // Verify OTP
+  // Correct OTP → create seller → move to Step 2 (Setup Shop)
   // Wrong OTP   → show error, stay on OTP screen
   const verifyOtp = async () => {
-    if (!userData) return;
+    if (!SellerData) return;
     const otpValue = otp.join("");
     if (otpValue.length < 4) {
       setServerError("Please enter all 4 digits");
@@ -130,26 +134,46 @@ const Register = () => {
     setServerError(null);
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/verify-otp", {
+      const res = await fetch("http://localhost:8080/api/v1/auth/verify-seller", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          email: userData.email,
+          email: SellerData.email,
           otp: otpValue,
-          name: userData.name,
-          password: userData.password,
+          name: SellerData.name,
+          password: SellerData.password,
+          phone_number: SellerData.phone,
+          country: SellerData.country,
         }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || "Invalid OTP");
-      router.push("/login");
+      setSellerId(result.seller?.id ?? null);
+      setShowOtp(false);
+      setactiveStep(2);
     } catch (err: unknown) {
       setServerError(err instanceof Error ? err.message : "Invalid OTP. Please try again.");
       setOtp(["", "", "", ""]);
       inputRefs.current[0]?.focus();
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Step 3 — Connect Stripe for payouts
+  const connectStripe = async () => {
+    if (!sellerId) return;
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_SERVER_URI}/api/v1/auth/create-stripe-link`,
+        { sellerId }
+      );
+      if (response.data.url) {
+        window.location.href = response.data.url;
+      }
+    } catch (error) {
+      console.error("Stripe Connection Error:", error);
     }
   };
 
@@ -177,7 +201,7 @@ const Register = () => {
       </div>
       {/* {step content} */}
       <div className="w-[90%] md:w-[480px] p-8 rounded-lg bg-white shadow">
-        {!showOtp ? (
+        {activeStep === 1 && !showOtp && (
           /* ── Step 1: Registration Form ── */
           <>
             <h3 className="text-3xl font-bold text-center mb-6">
@@ -296,15 +320,16 @@ const Register = () => {
               </p>
             </form>
           </>
-        ) : (
-          /* ── Step 2: OTP Verification ── */
+        )}
+        {activeStep === 1 && showOtp && (
+          /* ── Step 1b: OTP Verification ── */
           <>
             <h3 className="text-2xl font-semibold text-center mb-2">
               Verify Your Email
             </h3>
             <p className="text-center text-gray-500 text-sm mb-6">
               We sent a 4-digit OTP to{" "}
-              <span className="font-medium text-gray-800">{userData?.email}</span>
+              <span className="font-medium text-gray-800">{SellerData?.email}</span>
             </p>
 
             {serverError && (
@@ -354,6 +379,23 @@ const Register = () => {
               ← Back to registration
             </button>
           </>
+        )}
+        {activeStep === 2 && sellerId && (
+          /* ── Step 2: Setup Shop ── */
+          <CreateShop sellerId={sellerId} setActiveStep={setactiveStep} />
+        )}
+        {activeStep === 3 && (
+          /* ── Step 3: Connect Bank ── */
+          <div className="text-center">
+            <h3 className="text-2xl font-semibold">Withdraw Method</h3>
+            <br />
+            <button
+              className="w-full m-auto flex items-center justify-center gap-3 text-lg bg-black text-white py-3 rounded-lg cursor-pointer hover:bg-gray-900 transition-colors"
+              onClick={connectStripe}
+            >
+              Connect Stripe <StripeLogo />
+            </button>
+          </div>
         )}
       </div>
     </div>
