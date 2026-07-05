@@ -4,6 +4,9 @@
 const nextConfig = {
   // Next.js options go here
   // See: https://nextjs.org/docs/app/api-reference/config/next-config-js
+  compiler: {
+    styledComponents: true,
+  },
 };
 
 module.exports = nextConfig;

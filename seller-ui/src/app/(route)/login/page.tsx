@@ -21,7 +21,7 @@ const Login = () => {
 
   const loginMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await axios.post( "http://localhost:8080/api/v1/auth/login", data,
+      const response = await axios.post( "http://localhost:8080/api/v1/auth/login-seller", data,
       { withCredentials: true } );
       return response.data;
     },
