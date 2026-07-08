@@ -8,8 +8,8 @@
       scroll-behavior: smooth;
     }
     body {
-      font-family: inherit;
-      line-height: inherit;
+      font-family: 2xl;
+      line-height: 2xl;
       margin: 0;
     }
     h1,
@@ -25,15 +25,6 @@
       border-width: 0;
       border-style: solid;
       border-color: currentColor;
-    }
-    h1,
-    h2 {
-      font-size: inherit;
-      font-weight: inherit;
-    }
-    a {
-      color: inherit;
-      text-decoration: inherit;
     }
     pre {
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
