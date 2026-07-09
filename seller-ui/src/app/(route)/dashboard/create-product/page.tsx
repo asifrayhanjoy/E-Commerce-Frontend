@@ -32,6 +32,7 @@ import SizeSelector from "@/app/package/components/size-selector";
     regular_price?: number | string;
     sale_price?: number | string;
     video_url?: string;
+    discountCodes?: string[];
     stock?: number;
   };
 
@@ -120,6 +121,14 @@ import SizeSelector from "@/app/package/components/size-selector";
     retry: 2,
   });
 
+    const { data: discountCodes = [], isLoading: discountLoading } = useQuery({
+  queryKey: ["shop-discounts"],
+  queryFn: async () => {
+    const res = await axiosInstance.get("/api/v1/products/get-discount-codes");
+    return res?.data?.discount_codes || [];
+  },
+});
+
   const categories = data?.categories ?? [];
   const selectedCategory = watch("category");
   const subCategories = getSubCategories(data?.subCategories, selectedCategory);
@@ -129,33 +138,58 @@ import SizeSelector from "@/app/package/components/size-selector";
     };
 
     const handleSaveDraft = () => {
-};
-
-    const handleImageChange = (file: File | null, index: number) => {
-      const updatedImages = [...images];
-      updatedImages[index] = file;
-
-      if (index === images.length - 1 && images.length < 8) {
-        updatedImages.push(null);
-      }
-
-      setImages(updatedImages);
-      setValue("images", updatedImages);
     };
 
-    const handleRemoveImage = (index: number) => {
-      setImages((prevImages) => {
-        const updatedImages = [...prevImages];
+const convertFileToBase64 = (file: File) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = (error) => reject(error);
+  });
+};
 
-        updatedImages.splice(index, 1);
+    const handleImageChange = async (file: File | null, index: number) => {
+      if (!file) return;
 
-        if (!updatedImages.includes(null) && updatedImages.length < 8) {
+      try {
+        const fileName = await convertFileToBase64(file);
+        const response = await axiosInstance.post("/api/v1/products/upload-product-image",{fileName});
+
+        const updatedImages = [...images];
+        updatedImages[index] = response.data.file_url;
+
+        if (index === images.length - 1 && updatedImages.length < 8) {
           updatedImages.push(null);
         }
 
+        setImages(updatedImages);
         setValue("images", updatedImages);
-        return updatedImages;
-      });
+        } catch (error) {
+        console.log(error);
+        }};
+
+    const handleRemoveImage = (index: number) => {
+      try {
+    const updatedImages = [...images];
+    const imageToDelete = updatedImages[index];
+
+    if (imageToDelete && typeof imageToDelete === "string") {
+      // delete our picture
+      }
+
+    updatedImages.splice(index, 1);
+
+    // Add null placeholder
+    if (!updatedImages.includes(null) && updatedImages.length < 8) {
+    updatedImages.push(null);
+    }
+
+  setImages(updatedImages);
+  setValue("images", updatedImages);
+}  catch (error) {
+        console.log(error)
+      }
     };
 
     return (
@@ -519,6 +553,42 @@ import SizeSelector from "@/app/package/components/size-selector";
   <label className="block font-semibold text-gray-300 mb-1">
     Select Discount Codes (optional)
   </label>
+{
+  discountLoading ? (
+    <p className="text-gray-400">
+      Loading discount codes ...
+    </p>
+  ) : (
+    <div className="flex flex-wrap gap-2">
+      {discountCodes?.map((code: any) => (
+        <button
+          key={code.id}
+          type="button"
+          className={`px-3 py-1 rounded-md text-sm font-semibold border ${
+            watch("discountCodes")?.includes(code.id)
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
+          }`}
+          onClick={() => {
+            const currentSelection = watch("discountCodes") || [];
+
+            const updatedSelection = currentSelection?.includes(code.id)
+              ? currentSelection.filter(
+                  (id: string) => id !== code.id
+                )
+              : [...currentSelection, code.id];
+
+            setValue("discountCodes", updatedSelection);
+          }}
+        >
+          {code?.public_name} (
+          {code.discountValue}
+          {code.discountType === "percentage" ? "%" : "$"})
+        </button>
+      ))}
+    </div>
+  )
+}
 </div>
             </div>
           </div>
