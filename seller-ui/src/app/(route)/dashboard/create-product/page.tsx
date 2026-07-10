@@ -10,9 +10,11 @@ import SizeSelector from "@/app/package/components/size-selector";
   import ImagePlaceHolder from "@/app/shared/components/image.Preseholder";
   import axiosInstance from "@/utils/axiosInstance";
   import { useQuery } from "@tanstack/react-query";
-  import { ChevronRight } from "lucide-react";
-  import React, { useState } from "react";
+  import { ChevronRight, WandSparkles, X } from "lucide-react";
+  import React, { useRef, useState } from "react";
+  import { useRouter } from "next/navigation";
   import { useForm, Controller } from "react-hook-form";
+import toast from "react-hot-toast";
 
   type ProductFormData = {
     title: string;
@@ -23,7 +25,7 @@ import SizeSelector from "@/app/package/components/size-selector";
     brand?: string;
     cash_on_delivery?: string;
     colors: string[];
-    images: (File | null)[];
+    images: (string | null | UploadedImage)[];
     custom_specifications: string;
     detailed_description?: string;
     // optional fields used in the form
@@ -34,6 +36,24 @@ import SizeSelector from "@/app/package/components/size-selector";
     video_url?: string;
     discountCodes?: string[];
     stock?: number;
+  };
+
+  interface UploadedImage {
+  fileId: string;
+  file_url: string;
+}
+
+  type ApplyEnhancedImage = (imageUrl: string) => void;
+
+  const isUploadedImage = (
+    image: ProductFormData["images"][number]
+  ): image is UploadedImage => {
+    return (
+      !!image &&
+      typeof image === "object" &&
+      !!image.fileId &&
+      !!image.file_url
+    );
   };
 
   type Category = string | {
@@ -52,6 +72,222 @@ import SizeSelector from "@/app/package/components/size-selector";
   const emptyCategories: CategoriesResponse = {
     categories: [],
     subCategories: {},
+  };
+
+  type EnhancementAction = "remove-bg" | "drop-shadow" | "retouch" | "upscale";
+
+  const enhancementOptions: { label: string; value: EnhancementAction }[] = [
+    { label: "Remove BG", value: "remove-bg" },
+    { label: "Drop Shadow", value: "drop-shadow" },
+    { label: "Retouch", value: "retouch" },
+    { label: "Upscale", value: "upscale" },
+  ];
+
+  const loadImage = (imageUrl: string) => {
+    return new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+
+      if (!imageUrl.startsWith("blob:") && !imageUrl.startsWith("data:")) {
+        image.crossOrigin = "anonymous";
+      }
+
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Could not load image"));
+      image.src = imageUrl;
+    });
+  };
+
+  const createImageCanvas = async (imageUrl: string) => {
+    const image = await loadImage(imageUrl);
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("Could not create image editor");
+    }
+
+    canvas.width = image.naturalWidth || image.width;
+    canvas.height = image.naturalHeight || image.height;
+    context.drawImage(image, 0, 0);
+
+    return { canvas, context, image };
+  };
+
+  const removeLightBackground = async (imageUrl: string) => {
+    const { canvas, context } = await createImageCanvas(imageUrl);
+    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+    const pixels = imageData.data;
+    const width = canvas.width;
+    const height = canvas.height;
+    const cornerPixelIndexes = [
+      0,
+      (width - 1) * 4,
+      ((height - 1) * width) * 4,
+      ((height - 1) * width + width - 1) * 4,
+    ];
+    const visibleCornerPixels = cornerPixelIndexes.filter(
+      (index) => pixels[index + 3] > 20
+    );
+    const backgroundColor = visibleCornerPixels.length
+      ? visibleCornerPixels.reduce(
+          (total, index) => ({
+            red: total.red + pixels[index],
+            green: total.green + pixels[index + 1],
+            blue: total.blue + pixels[index + 2],
+          }),
+          { red: 0, green: 0, blue: 0 }
+        )
+      : { red: 255, green: 255, blue: 255 };
+
+    backgroundColor.red = backgroundColor.red / Math.max(1, visibleCornerPixels.length);
+    backgroundColor.green = backgroundColor.green / Math.max(1, visibleCornerPixels.length);
+    backgroundColor.blue = backgroundColor.blue / Math.max(1, visibleCornerPixels.length);
+
+    const isBackgroundPixel = (pixelIndex: number) => {
+      const index = pixelIndex * 4;
+      const red = pixels[index];
+      const green = pixels[index + 1];
+      const blue = pixels[index + 2];
+      const distanceFromBackground = Math.hypot(
+        red - backgroundColor.red,
+        green - backgroundColor.green,
+        blue - backgroundColor.blue
+      );
+
+      return distanceFromBackground < 80 || pixels[index + 3] < 20;
+    };
+
+    const visitedPixels = new Uint8Array(width * height);
+    const backgroundPixels: number[] = [];
+    const queue: number[] = [];
+
+    const addPixelToQueue = (pixelIndex: number) => {
+      if (visitedPixels[pixelIndex] || !isBackgroundPixel(pixelIndex)) return;
+
+      visitedPixels[pixelIndex] = 1;
+      queue.push(pixelIndex);
+    };
+
+    for (let x = 0; x < width; x += 1) {
+      addPixelToQueue(x);
+      addPixelToQueue((height - 1) * width + x);
+    }
+
+    for (let y = 0; y < height; y += 1) {
+      addPixelToQueue(y * width);
+      addPixelToQueue(y * width + width - 1);
+    }
+
+    for (let queueIndex = 0; queueIndex < queue.length; queueIndex += 1) {
+      const pixelIndex = queue[queueIndex];
+      const x = pixelIndex % width;
+      const y = Math.floor(pixelIndex / width);
+
+      backgroundPixels.push(pixelIndex);
+
+      if (x > 0) addPixelToQueue(pixelIndex - 1);
+      if (x < width - 1) addPixelToQueue(pixelIndex + 1);
+      if (y > 0) addPixelToQueue(pixelIndex - width);
+      if (y < height - 1) addPixelToQueue(pixelIndex + width);
+    }
+
+    for (const pixelIndex of backgroundPixels) {
+      const alphaIndex = pixelIndex * 4 + 3;
+      pixels[alphaIndex] = 0;
+    }
+
+    for (const pixelIndex of backgroundPixels) {
+      const x = pixelIndex % width;
+      const y = Math.floor(pixelIndex / width);
+      const neighbors = [
+        x > 0 ? pixelIndex - 1 : null,
+        x < width - 1 ? pixelIndex + 1 : null,
+        y > 0 ? pixelIndex - width : null,
+        y < height - 1 ? pixelIndex + width : null,
+      ];
+
+      if (neighbors.some((neighbor) => neighbor !== null && !visitedPixels[neighbor])) {
+        pixels[pixelIndex * 4 + 3] = 80;
+      }
+    }
+
+    context.putImageData(imageData, 0, 0);
+    return canvas.toDataURL("image/png");
+  };
+
+  const addDropShadow = async (imageUrl: string) => {
+    const imageWithoutBackground = await removeLightBackground(imageUrl);
+    const image = await loadImage(imageWithoutBackground);
+    const imageWidth = image.naturalWidth || image.width;
+    const imageHeight = image.naturalHeight || image.height;
+    const padding = Math.max(40, Math.round(Math.max(imageWidth, imageHeight) * 0.08));
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("Could not create image editor");
+    }
+
+    canvas.width = imageWidth + padding * 2;
+    canvas.height = imageHeight + padding * 2;
+    context.shadowColor = "rgba(0, 0, 0, 0.35)";
+    context.shadowBlur = padding * 0.7;
+    context.shadowOffsetY = padding * 0.35;
+    context.drawImage(image, padding, padding, imageWidth, imageHeight);
+
+    return canvas.toDataURL("image/png");
+  };
+
+  const retouchImage = async (imageUrl: string) => {
+    const image = await loadImage(imageUrl);
+    const imageWidth = image.naturalWidth || image.width;
+    const imageHeight = image.naturalHeight || image.height;
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("Could not create image editor");
+    }
+
+    canvas.width = imageWidth;
+    canvas.height = imageHeight;
+    context.filter = "brightness(1.06) contrast(1.08) saturate(1.14)";
+    context.drawImage(image, 0, 0, imageWidth, imageHeight);
+
+    return canvas.toDataURL("image/png");
+  };
+
+  const upscaleImage = async (imageUrl: string) => {
+    const image = await loadImage(imageUrl);
+    const imageWidth = image.naturalWidth || image.width;
+    const imageHeight = image.naturalHeight || image.height;
+    const maxSize = 2400;
+    const scale = Math.max(1, Math.min(2, maxSize / Math.max(imageWidth, imageHeight)));
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+
+    if (!context) {
+      throw new Error("Could not create image editor");
+    }
+
+    canvas.width = Math.round(imageWidth * scale);
+    canvas.height = Math.round(imageHeight * scale);
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL("image/png");
+  };
+
+  const applyImageEnhancement = (
+    enhancement: EnhancementAction,
+    imageUrl: string
+  ) => {
+    if (enhancement === "remove-bg") return removeLightBackground(imageUrl);
+    if (enhancement === "drop-shadow") return addDropShadow(imageUrl);
+    if (enhancement === "retouch") return retouchImage(imageUrl);
+
+    return upscaleImage(imageUrl);
   };
 
   const getCategoryValue = (category: Category, index: number) => {
@@ -90,7 +326,7 @@ import SizeSelector from "@/app/package/components/size-selector";
   };
 
   const Page = () => {
-    const { register, control, setValue, handleSubmit, formState: { errors, isDirty }, watch } = useForm<ProductFormData>({
+    const { register, control, setValue, handleSubmit, formState: { errors }, watch } = useForm<ProductFormData>({
       defaultValues: {
         cash_on_delivery: "yes",
         colors: [],
@@ -102,9 +338,19 @@ import SizeSelector from "@/app/package/components/size-selector";
       },
     });
 
+    const router = useRouter();
     const [isChanged, ] = useState(true);
-    const [, setOpenImageModal] = useState(false);
-    const [images, setImages] = useState<(File | null)[]>([null]);
+    const [openImageModal, setOpenImageModal] = useState(false);
+    const [images, setImages] = useState<(string | null | UploadedImage)[]>([null]);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
+    const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
+    const [selectedEnhancement, setSelectedEnhancement] = useState<EnhancementAction | null>(null);
+    const [isEnhancing, setIsEnhancing] = useState(false);
+    const [isApplyingEnhancement, setIsApplyingEnhancement] = useState(false);
+    const [enhancementError, setEnhancementError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const applyEnhancedImageRef = useRef<ApplyEnhancedImage | null>(null);
     const regularPrice = watch("regular_price");
 
    const { data, isLoading } = useQuery<CategoriesResponse>({
@@ -133,11 +379,127 @@ import SizeSelector from "@/app/package/components/size-selector";
   const selectedCategory = watch("category");
   const subCategories = getSubCategories(data?.subCategories, selectedCategory);
 
-    const onSubmit = (data: ProductFormData) => {
-      console.log(data);
+  const onSubmit = async (data: ProductFormData) => {
+  try {
+    setLoading(true);
+
+    const payload = {
+      ...data,
+      images: data.images.filter(isUploadedImage),
+      short_description: data.shortDescription,
     };
 
+    await axiosInstance.post("/api/v1/products/create-product", payload);
+
+    router.push("/dashboard/all-products");
+  } catch (error: any) {
+    toast.error(error?.response?.data?.message || "Failed to create product");
+  } finally {
+    setLoading(false);
+  }
+};
+
     const handleSaveDraft = () => {
+    };
+
+    const handleOpenImageModal = (
+      openImageModal: boolean,
+      imageUrl?: string | null,
+      imageIndex?: number,
+      onApplyImage?: ApplyEnhancedImage
+    ) => {
+      setOpenImageModal(openImageModal);
+      setSelectedImage(openImageModal ? imageUrl ?? null : null);
+      setPreviewImage(openImageModal ? imageUrl ?? null : null);
+      setActiveImageIndex(openImageModal ? imageIndex ?? null : null);
+      setSelectedEnhancement(null);
+      setEnhancementError(null);
+      setIsEnhancing(false);
+      setIsApplyingEnhancement(false);
+      applyEnhancedImageRef.current = openImageModal ? onApplyImage ?? null : null;
+    };
+
+    const handleCloseImageModal = () => {
+      setOpenImageModal(false);
+      setSelectedImage(null);
+      setPreviewImage(null);
+      setActiveImageIndex(null);
+      setSelectedEnhancement(null);
+      setEnhancementError(null);
+      setIsApplyingEnhancement(false);
+      applyEnhancedImageRef.current = null;
+    };
+
+    const handleEnhancementClick = async (enhancement: EnhancementAction) => {
+      if (!previewImage) return;
+
+      setSelectedEnhancement(enhancement);
+      setIsEnhancing(true);
+      setEnhancementError(null);
+
+      try {
+        const enhancedImage = await applyImageEnhancement(
+          enhancement,
+          previewImage
+        );
+        setPreviewImage(enhancedImage);
+      } catch (error) {
+        console.log(error);
+        setEnhancementError("This image could not be edited. Try another image.");
+      } finally {
+        setIsEnhancing(false);
+      }
+    };
+
+    const handleResetEnhancement = () => {
+      setPreviewImage(selectedImage);
+      setSelectedEnhancement(null);
+      setEnhancementError(null);
+    };
+
+    const handleApplyEnhancedImage = async () => {
+      if (!previewImage || activeImageIndex === null) return;
+
+      setIsApplyingEnhancement(true);
+      setEnhancementError(null);
+
+      try {
+        const response = await axiosInstance.post(
+          "/api/v1/products/upload-product-image",
+          { fileName: previewImage }
+        );
+        const uploadedImage: UploadedImage = {
+          fileId: response.data.fileId,
+          file_url: response.data.file_url,
+        };
+        const updatedImages = [...images];
+        const oldImage = updatedImages[activeImageIndex];
+
+        updatedImages[activeImageIndex] = uploadedImage;
+
+        setImages(updatedImages);
+        setValue("images", updatedImages.filter(isUploadedImage));
+        applyEnhancedImageRef.current?.(previewImage);
+
+        if (oldImage && typeof oldImage === "object") {
+          try {
+            await axiosInstance.delete("/api/v1/products/delete-product-image", {
+              data: {
+                fileId: oldImage.fileId,
+              },
+            });
+          } catch (error) {
+            console.log(error);
+          }
+        }
+
+        handleCloseImageModal();
+      } catch (error) {
+        console.log(error);
+        setEnhancementError("The edited image could not be saved. Please try again.");
+      } finally {
+        setIsApplyingEnhancement(false);
+      }
     };
 
 const convertFileToBase64 = (file: File) => {
@@ -156,27 +518,35 @@ const convertFileToBase64 = (file: File) => {
         const fileName = await convertFileToBase64(file);
         const response = await axiosInstance.post("/api/v1/products/upload-product-image",{fileName});
 
+        const uploadedImage: UploadedImage = {
+         fileId: response.data.fileId,
+         file_url: response.data.file_url,
+         };
         const updatedImages = [...images];
-        updatedImages[index] = response.data.file_url;
+        updatedImages[index] = uploadedImage;
 
         if (index === images.length - 1 && updatedImages.length < 8) {
           updatedImages.push(null);
         }
 
         setImages(updatedImages);
-        setValue("images", updatedImages);
+        setValue("images", updatedImages.filter(isUploadedImage));
         } catch (error) {
         console.log(error);
         }};
 
-    const handleRemoveImage = (index: number) => {
+    const handleRemoveImage = async (index: number) => {
       try {
     const updatedImages = [...images];
     const imageToDelete = updatedImages[index];
 
-    if (imageToDelete && typeof imageToDelete === "string") {
-      // delete our picture
-      }
+    if (imageToDelete && typeof imageToDelete === "object") {
+      await axiosInstance.delete("/api/v1/products/delete-product-image", {
+  data: {
+    fileId: imageToDelete.fileId!,
+    },
+    });
+    }
 
     updatedImages.splice(index, 1);
 
@@ -186,13 +556,14 @@ const convertFileToBase64 = (file: File) => {
     }
 
   setImages(updatedImages);
-  setValue("images", updatedImages);
+  setValue("images", updatedImages.filter(isUploadedImage));
 }  catch (error) {
         console.log(error)
       }
     };
 
     return (
+      <>
       <form
         className="w-full mx-auto p-8 shadow-md rounded-lg text-white"
         onSubmit={handleSubmit(onSubmit)}
@@ -211,11 +582,12 @@ const convertFileToBase64 = (file: File) => {
         <div className="py-4 w-full flex flex-col gap-6 md:flex-row">
           <div className="w-full md:w-1/3">
             <ImagePlaceHolder
-              setOpenImageModal={setOpenImageModal}
+              setOpenImageModal={handleOpenImageModal}
               size="765 x 850"
               small={false}
               index={0}
               onImageChange={handleImageChange}
+              
               onRemove={handleRemoveImage}
             />
           </div>
@@ -234,14 +606,24 @@ const convertFileToBase64 = (file: File) => {
               )}
 
               <Input type="textarea"
-                label="Short Description * (Max 150 words)"
-                placeholder="Enter product description for quick view"
+                label="Short Description * (5-50 characters)"
+                placeholder="Enter 5 to 50 characters"
                 className="min-h-[120px] resize-y"
                 {...register("shortDescription", {
                   required: "Short description is required",
-                  validate: (value) =>
-                    String(value).trim().split(/\s+/).filter(Boolean).length <=
-                      150 || "Short description must be 150 words or less",
+                  validate: (value) => {
+                    const length = String(value).trim().length;
+
+                    if (length < 5) {
+                      return "Short description must be at least 5 characters";
+                    }
+
+                    if (length > 50) {
+                      return "Short description must be 50 characters or less";
+                    }
+
+                    return true;
+                  },
                 })}
               />
               {errors.shortDescription?.message && (
@@ -320,23 +702,19 @@ const convertFileToBase64 = (file: File) => {
           </div>
             </div>
           </div>
-
                     {/* {number-03} */}
           <div className="w-full md:w-1/3">
             <div className="w-full flex flex-col gap-2">
               <div className="mt-2">
-    <label className="block font-semibold text-gray-300 mb-1">
-      Category *
-    </label>
+          <label className="block font-semibold text-gray-300 mb-1">
+            Category *
+            </label>
 
-  <Controller
-    name="category"
-    control={control}
-    rules={{
-      required: "Category is required",
-    }}
-    render={({ field }) => (
-      <select
+         <Controller name="category" control={control} rules={{
+           required: "Category is required",
+             }}
+          render={({ field }) => (
+         <select
         {...field}
         className="w-full border border-gray-700 bg-transparent rounded-md p-2 outline-none"
       >
@@ -407,7 +785,7 @@ const convertFileToBase64 = (file: File) => {
 
 <div className="mt-2">
   <label className="block font-semibold text-gray-300 mb-1">
-    Detailed Description * <span className="text-blue-400">(Min 100 Words)</span>
+    Detailed Description * <span className="text-blue-400">(Min 20 Characters)</span>
   </label>
 
   <Controller name="detailed_description"
@@ -415,14 +793,14 @@ const convertFileToBase64 = (file: File) => {
     rules={{
       required: "Detailed description is required!",
       validate: (value) => {
-        const text = value ?? '';
-        const wordCount = text
-          .split(/\s+/)
-          .filter((word: string) => word).length;
+        const text = String(value ?? "")
+          .replace(/<[^>]*>/g, "")
+          .replace(/&nbsp;/g, " ")
+          .trim();
 
         return (
-          wordCount >= 100 ||
-          "Description must be at least 100 words!"
+          text.length >= 20 ||
+          "Description must be at least 20 characters!"
         );
       },
     }}
@@ -593,8 +971,6 @@ const convertFileToBase64 = (file: File) => {
             </div>
           </div>
 
-
-
         </div>
         <div className="mt-6 flex justify-end gap-3">
   {isChanged && (
@@ -607,14 +983,114 @@ const convertFileToBase64 = (file: File) => {
     </button>
   )}
   <button
-  type="submit"
-  className="px-4 py-2 bg-blue-600 text-white rounded-md"
-  disabled={isLoading}
->
-  {isLoading ? "Creating..." : "Create"}
+    type="submit"
+    className="px-4 py-2 bg-blue-600 text-white rounded-md"
+    disabled={isLoading || loading}
+  >
+    {isLoading || loading ? "Creating..." : "Create"}
 </button>
 </div>
       </form>
+      {openImageModal && previewImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={handleCloseImageModal}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg border border-slate-700 bg-slate-900 p-6 text-white shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-2xl font-semibold">
+                Enhance Product Image
+              </h3>
+
+              <button
+                type="button"
+                onClick={handleCloseImageModal}
+                className="rounded p-1 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+                aria-label="Close image preview"
+              >
+                <X size={28} />
+              </button>
+            </div>
+
+            <div className="flex h-[260px] items-center justify-center overflow-hidden rounded-md border border-slate-700 bg-slate-950 sm:h-[340px]">
+              <img
+                src={previewImage}
+                alt="Selected product"
+                className="h-full w-full object-contain"
+              />
+            </div>
+
+            <div className="mt-6">
+              <h4 className="mb-3 text-lg font-semibold">
+                AI Enhancements
+              </h4>
+
+              {enhancementError && (
+                <p className="mb-3 text-sm text-red-300">
+                  {enhancementError}
+                </p>
+              )}
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {enhancementOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleEnhancementClick(option.value)}
+                    disabled={isEnhancing || isApplyingEnhancement}
+                    className={`flex items-center gap-3 rounded-md px-4 py-4 text-left text-lg font-semibold transition-colors ${
+                      selectedEnhancement === option.value
+                        ? "bg-blue-600 text-white"
+                        : "bg-slate-700 text-slate-100 hover:bg-slate-600"
+                    } ${
+                      isEnhancing || isApplyingEnhancement
+                        ? "cursor-not-allowed opacity-60"
+                        : ""
+                    }`}
+                  >
+                    <WandSparkles size={22} />
+                    <span>
+                      {isEnhancing && selectedEnhancement === option.value
+                        ? "Working..."
+                        : option.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleResetEnhancement}
+                disabled={
+                  isEnhancing ||
+                  isApplyingEnhancement ||
+                  previewImage === selectedImage
+                }
+                className="mt-4 rounded-md bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-200 transition-colors hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Reset Image
+              </button>
+
+              <button
+                type="button"
+                onClick={handleApplyEnhancedImage}
+                disabled={
+                  isEnhancing ||
+                  isApplyingEnhancement ||
+                  previewImage === selectedImage
+                }
+                className="ml-3 mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isApplyingEnhancement ? "Applying..." : "Apply Image"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      </>
     );
   };
 
