@@ -14,11 +14,12 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
-import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import useUser from "@/hooks/use.User";
-import { useProductTracking } from "@/hooks/use.tracking.hooks";
 import Ratings from "../Ratings/page";
+import { useStore } from "@/store";
+import useLocationTracking from "@/hooks/tracking.conponents";
+import useDeviceTracking from "@/hooks/use.tracking.hooks";
 
 const formatPrice = (value: number | string) => {
   const numericValue = Number(value);
@@ -82,8 +83,6 @@ const ProductQuickView = ({
   salePrice,
   regularPrice,
   soldCount,
-  trackingCounts,
-  onAddToCart,
   onClose,
 }: {
   product: any;
@@ -93,8 +92,6 @@ const ProductQuickView = ({
   salePrice?: number | string;
   regularPrice?: number | string;
   soldCount: number;
-  trackingCounts: { views: number; wishes: number };
-  onAddToCart: (quantity: number) => void;
   onClose: () => void;
 }) => {
   const [quantity, setQuantity] = useState(1);
@@ -119,6 +116,30 @@ const ProductQuickView = ({
     "https://api.dicebear.com/8.x/personas/svg?seed=shop";
   const isInStock = Number(product?.stock ?? 0) > 0;
 
+  const [timeLeft, setTimeLeft] = useState("");
+  const [open, setOpen] = useState(false);
+
+const addToCart = useStore((state: any) => state.addToCart);
+
+const addToWishlist = useStore(
+  (state: any) => state.addToWishlist
+);
+
+const removeFromWishlist = useStore(
+  (state: any) => state.removeFromWishlist
+);
+
+const wishlist = useStore((state: any) => state.wishlist);
+
+const isWishlisted = wishlist.some(
+  (item: any) => item.id === product.id
+);
+
+const cart = useStore((state: any) => state.cart);
+
+const isInCart = cart.some(
+  (item: any) => item.id === product.id
+);
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-8"
@@ -276,7 +297,6 @@ const ProductQuickView = ({
               <button
                 type="button"
                 className="flex h-[52px] cursor-pointer items-center gap-3 rounded-md bg-orange-600 px-8 text-lg font-bold text-white shadow-md transition hover:bg-orange-700"
-                onClick={() => onAddToCart(quantity)}
               >
                 <ShoppingBag size={24} />
                 Add to Cart
@@ -301,10 +321,6 @@ const ProductQuickView = ({
             <div className="mt-4 flex items-center gap-3 text-sm font-semibold text-slate-500">
               <span>{soldCount} sold</span>
               <span>|</span>
-              <span>{trackingCounts.views} views</span>
-              <span>|</span>
-              <span>{trackingCounts.wishes} wishes</span>
-              <span>|</span>
               <Ratings rating={product?.ratings} />
             </div>
           </div>
@@ -324,13 +340,7 @@ const ProductCard = ({
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const router = useRouter();
   const { user, isLoading } = useUser();
-  const { addToCart, getCartQuantity } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
-  const {
-    trackingCounts,
-    trackProductView,
-    trackProductWishlist,
-  } = useProductTracking({ productId: product?.id, user });
   const imageUrl =
     product?.images?.[0]?.url ||
     "https://images.unsplash.com/photo-1635405074683-96d6921a2a68?w=500&auto=format";
@@ -341,9 +351,8 @@ const ProductCard = ({
   const regularPrice = product?.regular_price;
   const soldCount = product?.sold ?? product?.totalSold ?? product?.sold_out ?? 0;
   const isWishlisted = isInWishlist(product);
-  const cartQuantity = getCartQuantity(product);
 
-  const handleWishlistClick = async () => {
+  const handleWishlistClick = () => {
     if (isLoading) {
       return;
     }
@@ -353,26 +362,7 @@ const ProductCard = ({
       return;
     }
 
-    try {
-      const action = isWishlisted ? "remove" : "add";
-      await trackProductWishlist(action);
-      toggleWishlist(product);
-    } catch (error) {
-      console.log("Failed to update wishlist tracking", error);
-    }
-  };
-
-  const handleCartClick = (quantity = 1) => {
-    if (isLoading) {
-      return;
-    }
-
-    if (!isLoading && !user) {
-      router.push("/login");
-      return;
-    }
-
-    addToCart(product, quantity);
+    toggleWishlist(product);
   };
 
   return (
@@ -420,12 +410,7 @@ const ProductCard = ({
             type="button"
             aria-label="Quick view"
             className="rounded-full bg-white p-[6px] shadow-md"
-            onClick={() => {
-              trackProductView().catch((error) => {
-                console.log("Failed to track product view", error);
-              });
-              setIsQuickViewOpen(true);
-            }}
+            onClick={() => setIsQuickViewOpen(true)}
           >
             <Eye
               className="cursor-pointer text-slate-900 transition hover:scale-110"
@@ -435,22 +420,12 @@ const ProductCard = ({
           <button
             type="button"
             aria-label="Add to cart"
-            className={`relative rounded-full p-[6px] shadow-md ${
-              cartQuantity > 0 ? "bg-slate-950" : "bg-white"
-            }`}
-            onClick={() => handleCartClick()}
+            className="rounded-full bg-white p-[6px] shadow-md"
           >
             <ShoppingBag
-              className={`cursor-pointer transition hover:scale-110 ${
-                cartQuantity > 0 ? "text-white" : "text-slate-900"
-              }`}
+              className="cursor-pointer text-slate-900 transition hover:scale-110"
               size={22}
             />
-            {cartQuantity > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
-                {cartQuantity > 9 ? "9+" : cartQuantity}
-              </span>
-            )}
           </button>
         </div>
       </div>
@@ -486,11 +461,6 @@ const ProductCard = ({
             {soldCount} sold
           </span>
         </div>
-
-        <div className="mt-2 flex items-center justify-between px-2 text-xs font-semibold text-slate-500">
-          <span>{trackingCounts.views} views</span>
-          <span>{trackingCounts.wishes} wishes</span>
-        </div>
       </div>
 
       {isQuickViewOpen && (
@@ -502,8 +472,6 @@ const ProductCard = ({
           salePrice={salePrice}
           regularPrice={regularPrice}
           soldCount={soldCount}
-          trackingCounts={trackingCounts}
-          onAddToCart={handleCartClick}
           onClose={() => setIsQuickViewOpen(false)}
         />
       )}
