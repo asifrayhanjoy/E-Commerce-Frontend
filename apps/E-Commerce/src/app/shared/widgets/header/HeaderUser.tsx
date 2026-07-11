@@ -4,14 +4,15 @@ import ProfileIcon from "../../../assete/svgs/profile.icon";
 import HeartIcon from "../../../assete/svgs/heard.icon";
 import CartIcon from "../../../assete/svgs/card.icon";
 import useUser from "@/hooks/use.User";
+import { useCart } from "@/contexts/CartContext";
+import { useWishlist } from "@/contexts/WishlistContext";
 
 export default function HeaderUser() {
-  const wishlistCount = 0;
-  const cartCount = 0;
-
-
-      const { user, isLoading } = useUser();
-
+  const { cartCount } = useCart();
+  const { wishlistCount } = useWishlist();
+  const { user, isLoading } = useUser();
+  const displayCartCount = user ? cartCount : 0;
+  const displayWishlistCount = user ? wishlistCount : 0;
 
   return (
     <>
@@ -60,7 +61,9 @@ export default function HeaderUser() {
         <Link href="/wishlist" className="relative">
           <HeartIcon size={26} color="#555" />
           <div className="w-6 h-6 border-2 border-white bg-red-500 rounded-full absolute -top-2 -right-3 flex items-center justify-center">
-            <span className="text-white font-medium text-sm">{wishlistCount}</span>
+            <span className="text-white font-medium text-sm">
+              {displayWishlistCount > 9 ? "9+" : displayWishlistCount}
+            </span>
           </div>
         </Link>
 
@@ -68,7 +71,9 @@ export default function HeaderUser() {
         <Link href="/cart" className="relative">
           <CartIcon size={26} color="#555" />
           <div className="w-6 h-6 border-2 border-white bg-red-500 rounded-full absolute -top-2 -right-3 flex items-center justify-center">
-            <span className="text-white font-medium text-sm">{cartCount > 9 ? "9+" : cartCount}</span>
+            <span className="text-white font-medium text-sm">
+              {displayCartCount > 9 ? "9+" : displayCartCount}
+            </span>
           </div>
         </Link>
       </div>

@@ -3,10 +3,18 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "nx dev E-Commerce --port=6001 --webpack",
-    "seller": "nx dev seller-ui --webpack",
-    "user": "nx serve user-ui",
-    "admin": "nx serve admin-ui"
+    "dev": "node ../tools/ecommerce-maintenance.mjs start --workspace fo --project E-Commerce --port 6001 -- nx dev E-Commerce --port=6001 --webpack",
+    "seller": "node ../tools/ecommerce-maintenance.mjs start --workspace fo --project seller-ui -- nx dev seller-ui --webpack",
+    "user": "node ../tools/ecommerce-maintenance.mjs start --workspace fo --project user-ui -- nx serve user-ui",
+    "admin": "node ../tools/ecommerce-maintenance.mjs start --workspace fo --project admin-ui -- nx serve admin-ui",
+    "build": "node ../tools/ecommerce-maintenance.mjs run --workspace fo --project E-Commerce --lock build -- nx build E-Commerce",
+    "build:seller": "node ../tools/ecommerce-maintenance.mjs run --workspace fo --project seller-ui --lock build -- nx build seller-ui",
+    "stop": "node ../tools/ecommerce-maintenance.mjs stop --workspace fo",
+    "sweep": "node ../tools/ecommerce-maintenance.mjs sweep --workspace fo",
+    "clean": "node ../tools/ecommerce-maintenance.mjs clean --workspace fo",
+    "reset": "node ../tools/ecommerce-maintenance.mjs reset --workspace fo",
+    "doctor": "node ../tools/ecommerce-maintenance.mjs doctor --workspace fo",
+    "health": "node ../tools/ecommerce-maintenance.mjs health --workspace fo --write"
   },
   "private": true,
   "dependencies": {
@@ -18,7 +26,9 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.80.0",
-    "react-icons": "^5.6.0"
+    "react-icons": "^5.6.0",
+    "ua-parser-js": "^2.0.10",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@nx/devkit": "23.0.1",
