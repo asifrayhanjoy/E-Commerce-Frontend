@@ -8,9 +8,14 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import useUser from "@/hooks/use.User";
+import { syncProductWishlist } from "@/utils/productTracking";
 
 export type WishlistProduct = {
   id?: string;
+  _id?: string;
+  productId?: string;
+  shopId?: string;
   slug?: string;
   title?: string;
   name?: string;
@@ -24,8 +29,8 @@ export type WishlistProduct = {
   totalSold?: number;
   sold_out?: number;
   stock?: number;
-  Shop?: { name?: string };
-  shop?: { name?: string };
+  Shop?: { id?: string; _id?: string; name?: string };
+  shop?: { id?: string; _id?: string; name?: string };
 };
 
 type WishlistContextValue = {
@@ -41,25 +46,36 @@ const WishlistContext = createContext<WishlistContextValue | undefined>(
   undefined
 );
 
-const getProductKey = (product: WishlistProduct) => product.id || product.slug;
+const getProductKey = (product: WishlistProduct) =>
+  product.id || product._id || product.productId || product.slug;
+
+const getStorageKey = (user: any) => {
+  const userKey = user?.id || user?._id || user?.email || "guest";
+  return `${STORAGE_KEY}:${userKey}`;
+};
 
 export function WishlistProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useUser();
+  const storageKey = useMemo(() => getStorageKey(user), [user]);
   const [wishlistItems, setWishlistItems] = useState<WishlistProduct[]>([]);
 
   useEffect(() => {
     try {
-      const savedWishlist = window.localStorage.getItem(STORAGE_KEY);
+      const savedWishlist = window.localStorage.getItem(storageKey);
       if (savedWishlist) {
         setWishlistItems(JSON.parse(savedWishlist));
+        return;
       }
+
+      setWishlistItems([]);
     } catch {
       setWishlistItems([]);
     }
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(wishlistItems));
-  }, [wishlistItems]);
+    window.localStorage.setItem(storageKey, JSON.stringify(wishlistItems));
+  }, [storageKey, wishlistItems]);
 
   const isInWishlist = useCallback(
     (product: WishlistProduct) => {
@@ -69,35 +85,54 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
     [wishlistItems]
   );
 
-  const toggleWishlist = useCallback((product: WishlistProduct) => {
-    const productKey = getProductKey(product);
-    if (!productKey) {
-      return;
-    }
+  const syncWishlistChange = useCallback(
+    (product: WishlistProduct, action: "add" | "remove") => {
+      void syncProductWishlist(product, user, action).catch((error) => {
+        console.log("Failed to sync wishlist with database", error);
+      });
+    },
+    [user]
+  );
 
-    setWishlistItems((currentItems) => {
-      const exists = currentItems.some(
+  const toggleWishlist = useCallback(
+    (product: WishlistProduct) => {
+      const productKey = getProductKey(product);
+      if (!productKey) {
+        return;
+      }
+
+      const exists = wishlistItems.some(
         (item) => getProductKey(item) === productKey
       );
 
-      if (exists) {
-        return currentItems.filter((item) => getProductKey(item) !== productKey);
+      setWishlistItems((currentItems) => {
+        if (exists) {
+          return currentItems.filter(
+            (item) => getProductKey(item) !== productKey
+          );
+        }
+
+        return [...currentItems, product];
+      });
+      syncWishlistChange(product, exists ? "remove" : "add");
+    },
+    [syncWishlistChange, wishlistItems]
+  );
+
+  const removeFromWishlist = useCallback(
+    (product: WishlistProduct) => {
+      const productKey = getProductKey(product);
+      if (!productKey) {
+        return;
       }
 
-      return [...currentItems, product];
-    });
-  }, []);
-
-  const removeFromWishlist = useCallback((product: WishlistProduct) => {
-    const productKey = getProductKey(product);
-    if (!productKey) {
-      return;
-    }
-
-    setWishlistItems((currentItems) =>
-      currentItems.filter((item) => getProductKey(item) !== productKey)
-    );
-  }, []);
+      setWishlistItems((currentItems) =>
+        currentItems.filter((item) => getProductKey(item) !== productKey)
+      );
+      syncWishlistChange(product, "remove");
+    },
+    [syncWishlistChange]
+  );
 
   const value = useMemo(
     () => ({

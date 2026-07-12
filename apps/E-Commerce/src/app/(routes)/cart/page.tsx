@@ -11,6 +11,10 @@ import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import useUser from "@/hooks/use.User";
+import {
+  PRODUCT_DETAILS_PATH,
+  saveSelectedProductDetails,
+} from "@/utils/productDetailsRoute";
 
 const formatPrice = (value: number | string) => {
   const numericValue = Number(value);
@@ -126,7 +130,8 @@ export default function CartPage() {
                   className="grid gap-4 rounded-lg bg-white p-4 shadow-[0_16px_28px_-24px_rgba(15,23,42,0.55)] sm:grid-cols-[130px_1fr_auto]"
                 >
                   <Link
-                    href={`/product/${product.slug}`}
+                    href={PRODUCT_DETAILS_PATH}
+                    onClick={() => saveSelectedProductDetails(product)}
                     className="h-[130px] overflow-hidden rounded-md bg-slate-50"
                   >
                     <img
@@ -142,7 +147,10 @@ export default function CartPage() {
                     <p className="text-sm font-semibold text-blue-700">
                       {productName}
                     </p>
-                    <Link href={`/product/${product.slug}`}>
+                    <Link
+                      href={PRODUCT_DETAILS_PATH}
+                      onClick={() => saveSelectedProductDetails(product)}
+                    >
                       <h2 className="mt-2 line-clamp-2 text-lg font-bold text-slate-950">
                         {productTitle}
                       </h2>
@@ -216,7 +224,7 @@ export default function CartPage() {
               >
                 Have a Coupon?
               </label>
-              <div className="flex h-12 overflow-hidden rounded border border-slate-200 bg-white">
+              <div className="flex h-12 overflow-hidden rounded border border-slate-200 bg-gray-200">
                 <input
                   id="coupon-code"
                   type="text"

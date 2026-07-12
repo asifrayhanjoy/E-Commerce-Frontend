@@ -13,13 +13,15 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import { useState } from "react";
+import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import useUser from "@/hooks/use.User";
+import {
+  PRODUCT_DETAILS_PATH,
+  saveSelectedProductDetails,
+} from "@/utils/productDetailsRoute";
 import Ratings from "../Ratings/page";
-import { useStore } from "@/store";
-import useLocationTracking from "@/hooks/tracking.conponents";
-import useDeviceTracking from "@/hooks/use.tracking.hooks";
 
 const formatPrice = (value: number | string) => {
   const numericValue = Number(value);
@@ -83,6 +85,11 @@ const ProductQuickView = ({
   salePrice,
   regularPrice,
   soldCount,
+  isAddedToCart,
+  cartQuantity,
+  onAddToCart,
+  isWishlisted,
+  onWishlistClick,
   onClose,
 }: {
   product: any;
@@ -92,6 +99,11 @@ const ProductQuickView = ({
   salePrice?: number | string;
   regularPrice?: number | string;
   soldCount: number;
+  isAddedToCart: boolean;
+  cartQuantity: number;
+  onAddToCart: (quantity: number) => void;
+  isWishlisted: boolean;
+  onWishlistClick: () => void;
   onClose: () => void;
 }) => {
   const [quantity, setQuantity] = useState(1);
@@ -116,30 +128,6 @@ const ProductQuickView = ({
     "https://api.dicebear.com/8.x/personas/svg?seed=shop";
   const isInStock = Number(product?.stock ?? 0) > 0;
 
-  const [timeLeft, setTimeLeft] = useState("");
-  const [open, setOpen] = useState(false);
-
-const addToCart = useStore((state: any) => state.addToCart);
-
-const addToWishlist = useStore(
-  (state: any) => state.addToWishlist
-);
-
-const removeFromWishlist = useStore(
-  (state: any) => state.removeFromWishlist
-);
-
-const wishlist = useStore((state: any) => state.wishlist);
-
-const isWishlisted = wishlist.some(
-  (item: any) => item.id === product.id
-);
-
-const cart = useStore((state: any) => state.cart);
-
-const isInCart = cart.some(
-  (item: any) => item.id === product.id
-);
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-8"
@@ -296,14 +284,45 @@ const isInCart = cart.some(
 
               <button
                 type="button"
-                className="flex h-[52px] cursor-pointer items-center gap-3 rounded-md bg-orange-600 px-8 text-lg font-bold text-white shadow-md transition hover:bg-orange-700"
+                aria-label={
+                  isAddedToCart
+                    ? `Add to cart, ${cartQuantity} in cart`
+                    : "Add to cart"
+                }
+                className="relative flex h-[52px] cursor-pointer items-center gap-3 rounded-md bg-orange-600 px-8 text-lg font-bold text-white shadow-md transition hover:bg-orange-700"
+                onClick={() => onAddToCart(quantity)}
               >
                 <ShoppingBag size={24} />
-                Add to Cart
+                {isAddedToCart ? "Added to Cart" : "Add to Cart"}
+                {isAddedToCart && (
+                  <span className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 text-xs font-bold leading-none text-white">
+                    {cartQuantity > 9 ? "9+" : cartQuantity}
+                  </span>
+                )}
               </button>
 
-              <button type="button" aria-label="Add to wishlist">
-                <Heart size={42} className="fill-red-500 text-red-500" />
+              <button
+                type="button"
+                aria-label={
+                  isWishlisted ? "Remove from wishlist" : "Add to wishlist"
+                }
+                className={`relative flex h-[52px] w-[52px] items-center justify-center rounded-md border-2 transition ${
+                  isWishlisted
+                    ? "border-blue-600 bg-red-50 text-red-500"
+                    : "border-slate-200 bg-white text-slate-900 hover:border-red-200 hover:text-red-500"
+                }`}
+                onClick={onWishlistClick}
+              >
+                <Heart
+                  size={34}
+                  className="transition"
+                  fill={isWishlisted ? "currentColor" : "none"}
+                />
+                {isWishlisted && (
+                  <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[11px] font-bold leading-none text-white">
+                    1
+                  </span>
+                )}
               </button>
             </div>
 
@@ -340,6 +359,7 @@ const ProductCard = ({
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
   const router = useRouter();
   const { user, isLoading } = useUser();
+  const { addToCart, getCartQuantity } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const imageUrl =
     product?.images?.[0]?.url ||
@@ -351,6 +371,8 @@ const ProductCard = ({
   const regularPrice = product?.regular_price;
   const soldCount = product?.sold ?? product?.totalSold ?? product?.sold_out ?? 0;
   const isWishlisted = isInWishlist(product);
+  const cartQuantity = getCartQuantity(product);
+  const isAddedToCart = cartQuantity > 0;
 
   const handleWishlistClick = () => {
     if (isLoading) {
@@ -363,6 +385,19 @@ const ProductCard = ({
     }
 
     toggleWishlist(product);
+  };
+
+  const handleAddToCart = (quantity = 1) => {
+    if (isLoading) {
+      return;
+    }
+
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    addToCart(product, quantity);
   };
 
   return (
@@ -381,7 +416,8 @@ const ProductCard = ({
 
       <div className="flex h-[360px] w-full bg-white pl-6 pr-3 pt-4">
         <Link
-          href={`/product/${product?.slug}`}
+          href={PRODUCT_DETAILS_PATH}
+          onClick={() => saveSelectedProductDetails(product)}
           className="block h-[330px] min-w-0 flex-1 overflow-hidden bg-white"
         >
           <img
@@ -419,19 +455,37 @@ const ProductCard = ({
           </button>
           <button
             type="button"
-            aria-label="Add to cart"
-            className="rounded-full bg-white p-[6px] shadow-md"
+            aria-label={
+              isAddedToCart
+                ? `Add to cart, ${cartQuantity} in cart`
+                : "Add to cart"
+            }
+            className={`relative rounded-full p-[6px] shadow-md transition ${
+              isAddedToCart ? "bg-orange-50 ring-2 ring-orange-200" : "bg-white"
+            }`}
+            onClick={() => handleAddToCart()}
           >
             <ShoppingBag
-              className="cursor-pointer text-slate-900 transition hover:scale-110"
+              className={`cursor-pointer transition hover:scale-110 ${
+                isAddedToCart ? "text-orange-600" : "text-slate-900"
+              }`}
               size={22}
             />
+            {isAddedToCart && (
+              <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[11px] font-bold leading-none text-white">
+                {cartQuantity > 9 ? "9+" : cartQuantity}
+              </span>
+            )}
           </button>
         </div>
       </div>
 
       <div className="h-[180px] px-3 pb-5 pt-3">
-        <Link href={`/product/${product?.slug}`} className="block">
+        <Link
+          href={PRODUCT_DETAILS_PATH}
+          onClick={() => saveSelectedProductDetails(product)}
+          className="block"
+        >
           <p className="truncate px-2 text-sm font-medium text-blue-700">
             {productName}
           </p>
@@ -472,6 +526,11 @@ const ProductCard = ({
           salePrice={salePrice}
           regularPrice={regularPrice}
           soldCount={soldCount}
+          isAddedToCart={isAddedToCart}
+          cartQuantity={cartQuantity}
+          onAddToCart={handleAddToCart}
+          isWishlisted={isWishlisted}
+          onWishlistClick={handleWishlistClick}
           onClose={() => setIsQuickViewOpen(false)}
         />
       )}

@@ -9,6 +9,10 @@ import {
   type WishlistProduct,
 } from "@/contexts/WishlistContext";
 import useUser from "@/hooks/use.User";
+import {
+  PRODUCT_DETAILS_PATH,
+  saveSelectedProductDetails,
+} from "@/utils/productDetailsRoute";
 
 const getProductKey = (product: WishlistProduct) => product.id || product.slug;
 
@@ -172,7 +176,8 @@ export default function WishlistPage() {
                   >
                     <div className="flex items-center gap-8">
                       <Link
-                        href={`/product/${product.slug}`}
+                        href={PRODUCT_DETAILS_PATH}
+                        onClick={() => saveSelectedProductDetails(product)}
                         className="h-[76px] w-[76px] shrink-0 overflow-hidden rounded bg-white"
                       >
                         <img
@@ -184,7 +189,8 @@ export default function WishlistPage() {
                         />
                       </Link>
                       <Link
-                        href={`/product/${product.slug}`}
+                        href={PRODUCT_DETAILS_PATH}
+                        onClick={() => saveSelectedProductDetails(product)}
                         className="text-lg font-medium text-slate-950"
                       >
                         {productTitle}

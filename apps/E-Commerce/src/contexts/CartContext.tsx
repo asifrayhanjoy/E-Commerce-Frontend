@@ -8,9 +8,14 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import useUser from "@/hooks/use.User";
+import { syncProductCart } from "@/utils/productTracking";
 
 export type CartProduct = {
   id?: string;
+  _id?: string;
+  productId?: string;
+  shopId?: string;
   slug?: string;
   title?: string;
   name?: string;
@@ -24,8 +29,8 @@ export type CartProduct = {
   totalSold?: number;
   sold_out?: number;
   stock?: number;
-  Shop?: { name?: string };
-  shop?: { name?: string };
+  Shop?: { id?: string; _id?: string; name?: string };
+  shop?: { id?: string; _id?: string; name?: string };
 };
 
 export type CartItem = {
@@ -48,7 +53,13 @@ type CartContextValue = {
 const STORAGE_KEY = "e-shop-cart";
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
-const getProductKey = (product: CartProduct) => product.id || product.slug;
+const getProductKey = (product: CartProduct) =>
+  product.id || product._id || product.productId || product.slug;
+
+const getStorageKey = (user: any) => {
+  const userKey = user?.id || user?._id || user?.email || "guest";
+  return `${STORAGE_KEY}:${userKey}`;
+};
 
 const getProductPrice = (product: CartProduct) => {
   const price = Number(product.sale_price ?? product.price ?? 0);
@@ -56,59 +67,81 @@ const getProductPrice = (product: CartProduct) => {
 };
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useUser();
+  const storageKey = useMemo(() => getStorageKey(user), [user]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   useEffect(() => {
     try {
-      const savedCart = window.localStorage.getItem(STORAGE_KEY);
+      const savedCart = window.localStorage.getItem(storageKey);
       if (savedCart) {
         setCartItems(JSON.parse(savedCart));
+        return;
       }
+
+      setCartItems([]);
     } catch {
       setCartItems([]);
     }
-  }, []);
+  }, [storageKey]);
 
   useEffect(() => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(cartItems));
-  }, [cartItems]);
+    window.localStorage.setItem(storageKey, JSON.stringify(cartItems));
+  }, [cartItems, storageKey]);
 
-  const addToCart = useCallback((product: CartProduct, quantity = 1) => {
-    const productKey = getProductKey(product);
-    const nextQuantity = Math.max(1, quantity);
+  const syncCartChange = useCallback(
+    (product: CartProduct, action: "add" | "remove" | "set", quantity = 1) => {
+      void syncProductCart(product, user, action, quantity).catch((error) => {
+        console.log("Failed to sync cart with database", error);
+      });
+    },
+    [user]
+  );
 
-    if (!productKey) {
-      return;
-    }
+  const addToCart = useCallback(
+    (product: CartProduct, quantity = 1) => {
+      const productKey = getProductKey(product);
+      const nextQuantity = Math.max(1, quantity);
 
-    setCartItems((currentItems) => {
-      const existingItem = currentItems.find(
-        (item) => getProductKey(item.product) === productKey
-      );
-
-      if (existingItem) {
-        return currentItems.map((item) =>
-          getProductKey(item.product) === productKey
-            ? { ...item, quantity: item.quantity + nextQuantity }
-            : item
-        );
+      if (!productKey) {
+        return;
       }
 
-      return [...currentItems, { product, quantity: nextQuantity }];
-    });
-  }, []);
+      setCartItems((currentItems) => {
+        const existingItem = currentItems.find(
+          (item) => getProductKey(item.product) === productKey
+        );
 
-  const removeFromCart = useCallback((product: CartProduct) => {
-    const productKey = getProductKey(product);
+        if (existingItem) {
+          return currentItems.map((item) =>
+            getProductKey(item.product) === productKey
+              ? { ...item, quantity: item.quantity + nextQuantity }
+              : item
+          );
+        }
 
-    if (!productKey) {
-      return;
-    }
+        return [...currentItems, { product, quantity: nextQuantity }];
+      });
+      syncCartChange(product, "add", nextQuantity);
+    },
+    [syncCartChange]
+  );
 
-    setCartItems((currentItems) =>
-      currentItems.filter((item) => getProductKey(item.product) !== productKey)
-    );
-  }, []);
+  const removeFromCart = useCallback(
+    (product: CartProduct) => {
+      const productKey = getProductKey(product);
+
+      if (!productKey) {
+        return;
+      }
+
+      setCartItems((currentItems) =>
+        currentItems.filter((item) => getProductKey(item.product) !== productKey)
+      );
+      syncCartChange(product, "remove");
+    },
+    [syncCartChange]
+  );
 
   const updateCartQuantity = useCallback(
     (product: CartProduct, quantity: number) => {
@@ -130,13 +163,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             : item
         )
       );
+      syncCartChange(product, "set", quantity);
     },
-    [removeFromCart]
+    [removeFromCart, syncCartChange]
   );
 
   const clearCart = useCallback(() => {
+    cartItems.forEach((item) => {
+      syncCartChange(item.product, "remove");
+    });
     setCartItems([]);
-  }, []);
+  }, [cartItems, syncCartChange]);
 
   const isInCart = useCallback(
     (product: CartProduct) => {
