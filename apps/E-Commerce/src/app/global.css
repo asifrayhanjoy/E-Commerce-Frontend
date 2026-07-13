@@ -388,4 +388,41 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
+
+    .product-details-content {
+      color: #475569;
+      font-size: 0.875rem;
+      line-height: 1.7;
+    }
+
+    .product-details-content p {
+      margin-bottom: 0.75rem;
+    }
+
+    .product-details-content pre,
+    .product-details-content .ql-syntax {
+      display: inline-block;
+      max-width: 100%;
+      margin: 0;
+      overflow-x: auto;
+      border-radius: 0.125rem;
+      background: #111827;
+      color: #e5e7eb;
+      font-size: 1rem;
+      font-weight: 600;
+      line-height: 1.5;
+      white-space: pre;
+    }
+
+    .product-details-content .code-key {
+      color: #cbd5e1;
+    }
+
+    .product-details-content .code-type {
+      color: #38bdf8;
+    }
+
+    .product-details-content .code-decorator {
+      color: #fb923c;
+    }
   

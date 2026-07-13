@@ -2,6 +2,7 @@ import React from "react"
 import "./global.css"
 import Header from "./shared/widgets/header/Header"
 import Providers from "./providers"
+import Footer from "./shared/widgets/footer/Footer"
 
 
 
@@ -24,6 +25,7 @@ export default function RootLayout({
         <Providers>
           <Header></Header>
           {children}
+          <Footer />
         </Providers>
         </body>
     </html>

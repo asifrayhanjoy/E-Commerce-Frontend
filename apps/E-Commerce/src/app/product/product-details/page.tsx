@@ -2,12 +2,10 @@
 
 import {
   Heart,
-  Mail,
   MapPin,
   MessageSquare,
   Minus,
   PackageCheck,
-  Phone,
   Plus,
   ShieldCheck,
   ShoppingBag,
@@ -16,8 +14,8 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
-import { FaFacebookF, FaLinkedinIn, FaTwitter } from "react-icons/fa";
 import { useQuery } from "@tanstack/react-query";
+import ProductCard from "@/components/ProductCard/page";
 import Ratings from "@/components/Ratings/page";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
@@ -40,6 +38,14 @@ const formatPrice = (value: number | string) => {
     currency: "USD",
     maximumFractionDigits: 0,
   }).format(numericValue);
+};
+
+const ShippingAddressSection = () => {
+  return (
+    <div className="flex h-40 items-center justify-center">
+      <p className="text-sm font-medium text-slate-500">No reviews yet.</p>
+    </div>
+  );
 };
 
 const stripHtml = (value?: string) => {
@@ -77,92 +83,23 @@ const getDiscountPercent = (regularPrice?: number, salePrice?: number) => {
   return Math.round(((regularPrice - salePrice) / regularPrice) * 100);
 };
 
-const ProductDetailsFooter = () => (
-  <footer className="mt-16 border-t border-slate-100 bg-white">
-    <div className="mx-auto grid w-[80%] gap-10 py-14 md:grid-cols-[1.4fr_1fr_1fr_1.4fr]">
-      <div>
-        <p className="max-w-[260px] text-sm font-medium leading-6 text-slate-500">
-          Perfect ecommerce platform to start your business from scratch
-        </p>
-        <div className="mt-7 flex gap-4">
-          {[FaFacebookF, FaTwitter, FaLinkedinIn].map((Icon, index) => (
-            <a
-              key={index}
-              href="#"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-500 shadow-[0_12px_24px_-18px_rgba(15,23,42,0.65)] transition hover:text-blue-600"
-            >
-              <Icon size={16} />
-            </a>
-          ))}
-        </div>
-      </div>
+const getProductReviews = (product: any) => {
+  const reviews = Array.isArray(product?.reviews)
+    ? product.reviews
+    : Array.isArray(product?.Shop?.reviews)
+      ? product.Shop.reviews
+      : Array.isArray(product?.shop?.reviews)
+        ? product.shop.reviews
+        : [];
 
-      <div>
-        <h2 className="text-lg font-bold text-slate-900">My Account</h2>
-        <div className="mt-5 space-y-3 text-sm font-medium text-slate-500">
-          {[
-            "Track Orders",
-            "Shipping",
-            "Wishlist",
-            "My Account",
-            "Order History",
-            "Returns",
-          ].map((item) => (
-            <Link key={item} href="#" className="block hover:text-blue-600">
-              {item}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h2 className="text-lg font-bold text-slate-900">Information</h2>
-        <div className="mt-5 space-y-3 text-sm font-medium text-slate-500">
-          {[
-            "Our Story",
-            "Careers",
-            "Privacy Policy",
-            "Terms & Conditions",
-            "Latest News",
-            "Contact Us",
-          ].map((item) => (
-            <Link key={item} href="#" className="block hover:text-blue-600">
-              {item}
-            </Link>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h2 className="text-lg font-bold text-slate-900">Talk To Us</h2>
-        <p className="mt-5 text-sm font-medium text-slate-500">
-          Got Questions? Call us
-        </p>
-        <p className="mt-2 text-2xl font-black text-slate-950">
-          +670 413 90 762
-        </p>
-        <div className="mt-6 space-y-3 text-sm font-medium text-slate-500">
-          <p className="flex items-center gap-3">
-            <Mail size={18} />
-            support@eshop.com
-          </p>
-          <p className="flex items-start gap-3">
-            <MapPin size={18} className="mt-0.5 shrink-0" />
-            <span>
-              79 Sleepy Hollow St.
-              <br />
-              Jamaica, New York 1432
-            </span>
-          </p>
-          <p className="flex items-center gap-3">
-            <Phone size={18} />
-            Open daily
-          </p>
-        </div>
-      </div>
-    </div>
-  </footer>
-);
+  return reviews.map((review: any) => ({
+    ...review,
+    comment: review?.comment || review?.review || review?.reviews || "",
+    user: review?.user || {
+      name: review?.userName || review?.name || "Customer",
+    },
+  }));
+};
 
 export default function ProductDetailsPage() {
   const router = useRouter();
@@ -214,6 +151,35 @@ export default function ProductDetailsPage() {
     staleTime: 1000 * 60 * 2,
   });
 
+  const { data: suggestedProducts = [] } = useQuery({
+    queryKey: ["product-details-suggestions", product?.id, product?.category],
+    enabled: Boolean(product?.id),
+    queryFn: async () => {
+      const response = await axiosInstance.get(
+        "/api/v1/products/get-all-products?page=1&limit=8"
+      );
+      const products = Array.isArray(response.data?.products)
+        ? response.data.products
+        : [];
+
+      return products
+        .filter((item: any) => item?.id !== product?.id)
+        .sort((first: any, second: any) => {
+          if (first?.category === product?.category) {
+            return -1;
+          }
+
+          if (second?.category === product?.category) {
+            return 1;
+          }
+
+          return 0;
+        })
+        .slice(0, 4);
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+
   const productImages = useMemo(() => {
     if (!product?.images?.length) {
       return [fallbackImage];
@@ -257,13 +223,20 @@ export default function ProductDetailsPage() {
             </Link>
           </div>
         </section>
-        <ProductDetailsFooter />
       </main>
     );
   }
 
   const productTitle = product?.title || "Untitled product";
-  const shop = product?.Shop || product?.shop || {};
+  const productReviews = getProductReviews(product);
+  const shop = product?.Shop || product?.shop;
+  const shopName = typeof shop?.name === "string" ? shop.name.trim() : "";
+  const shopAddress =
+    typeof shop?.address === "string" ? shop.address.trim() : "";
+  const shopIdValue = shop?.id || shop?._id;
+  const shopId = shopIdValue ? String(shopIdValue) : "";
+  const hasShop = Boolean(shopName || shopId);
+  const shopRating = Number(shop?.ratings || 0);
   const brand = product?.brand || "No Brand";
   const sizes = toList(product?.sizes);
   const availableSizes = sizes.length > 0 ? sizes : ["XS"];
@@ -387,7 +360,7 @@ export default function ProductDetailsPage() {
                 <div className="mt-5 flex items-center gap-3">
                   <Ratings rating={product?.ratings} />
                   <span className="text-sm font-semibold text-blue-500">
-                    ({product?.reviews?.length || 0} Reviews)
+                    ({productReviews.length} Reviews)
                   </span>
                 </div>
 
@@ -470,7 +443,7 @@ export default function ProductDetailsPage() {
                 <p className="mt-6 max-w-[600px] text-sm font-medium leading-6 text-slate-500">
                   {stripHtml(product?.short_description) ||
                     stripHtml(product?.detailed_description) ||
-                    shop?.name ||
+                    shopName ||
                     "Product details are loaded from the database."}
                 </p>
               </>
@@ -479,13 +452,15 @@ export default function ProductDetailsPage() {
 
           <aside className="border-l border-slate-100 px-6 py-6">
             <div className="flex items-center justify-end gap-3">
-              <button
-                type="button"
-                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-blue-100 bg-blue-50 px-3 text-sm font-black text-blue-600 transition hover:bg-blue-100"
-              >
-                <MessageSquare size={17} />
-                Chat Now
-              </button>
+              {hasShop && (
+                <button
+                  type="button"
+                  className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-blue-100 bg-blue-50 px-3 text-sm font-black text-blue-600 transition hover:bg-blue-100"
+                >
+                  <MessageSquare size={17} />
+                  Chat Now
+                </button>
+              )}
               <button
                 type="button"
                 aria-label={
@@ -499,15 +474,20 @@ export default function ProductDetailsPage() {
             </div>
 
             <div className="mt-5 space-y-6 text-slate-500">
-              <section className="rounded-md border border-slate-100 bg-slate-50/60 p-4">
-                <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                  Delivery Option
-                </h2>
-                <p className="mt-3 flex items-start gap-3 text-base font-bold leading-6 text-slate-800">
-                  <MapPin size={20} className="mt-0.5 shrink-0 text-slate-500" />
-                  <span>{shop?.address || "Petaling Jaya, Malaysia"}</span>
-                </p>
-              </section>
+              {shopAddress && (
+                <section className="rounded-md border border-slate-100 bg-slate-50/60 p-4">
+                  <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                    Delivery Option
+                  </h2>
+                  <p className="mt-3 flex items-start gap-3 text-base font-bold leading-6 text-slate-800">
+                    <MapPin
+                      size={20}
+                      className="mt-0.5 shrink-0 text-slate-500"
+                    />
+                    <span>{shopAddress}</span>
+                  </p>
+                </section>
+              )}
 
               <section className="rounded-md border border-slate-100 bg-white p-4">
                 <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
@@ -523,55 +503,109 @@ export default function ProductDetailsPage() {
                 </p>
               </section>
 
-              <section className="rounded-md border border-slate-100 bg-white p-4">
-                <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                  Sold by
-                </p>
-                <h2 className="mt-3 line-clamp-2 text-xl font-black leading-7 text-slate-950">
-                  {shop?.name || "E-Shop Seller"}
-                </h2>
+              {hasShop && (
+                <section className="rounded-md border border-slate-100 bg-white p-4">
+                  <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                    Sold by
+                  </p>
+                  {shopName && (
+                    <h2 className="mt-3 line-clamp-2 text-xl font-black leading-7 text-slate-950">
+                      {shopName}
+                    </h2>
+                  )}
 
-                <div className="mt-5 grid grid-cols-3 gap-2 border-t border-slate-100 pt-5">
-                  <div className="rounded-md bg-slate-50 px-2.5 py-3 text-center">
-                    <p className="text-[11px] font-black uppercase leading-4 text-slate-500">
-                      Seller Rating
-                    </p>
-                    <p className="mt-2 text-xl font-black leading-none text-slate-950">
-                      {Math.round(Number(shop?.ratings || 0) * 20) || 88}%
-                    </p>
-                  </div>
-                  <div className="rounded-md bg-slate-50 px-2.5 py-3 text-center">
-                    <p className="text-[11px] font-black uppercase leading-4 text-slate-500">
-                      Ship Time
-                    </p>
-                    <p className="mt-2 text-xl font-black leading-none text-slate-950">
-                      100%
-                    </p>
-                  </div>
-                  <div className="rounded-md bg-slate-50 px-2.5 py-3 text-center">
-                    <p className="text-[11px] font-black uppercase leading-4 text-slate-500">
-                      Chat Rate
-                    </p>
-                    <p className="mt-2 text-xl font-black leading-none text-slate-950">
-                      100%
-                    </p>
-                  </div>
-                </div>
+                  {shopRating > 0 && (
+                    <div className="mt-5 border-t border-slate-100 pt-5">
+                      <div className="rounded-md bg-slate-50 px-2.5 py-3 text-center">
+                        <p className="text-[11px] font-black uppercase leading-4 text-slate-500">
+                          Seller Rating
+                        </p>
+                        <p className="mt-2 text-xl font-black leading-none text-slate-950">
+                          {Math.round(shopRating * 20)}%
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-                <Link
-                  href="/shops"
-                  className="mt-5 flex h-11 items-center justify-center gap-2 rounded-md border border-blue-100 bg-blue-50 text-sm font-black uppercase text-blue-600 transition hover:bg-blue-100"
-                >
-                  <Store size={18} />
-                  Go To Store
-                </Link>
-              </section>
+                  {shopId && (
+                    <Link
+                      href={`/shops/${encodeURIComponent(shopId)}`}
+                      className="mt-5 flex h-11 items-center justify-center gap-2 rounded-md border border-blue-100 bg-blue-50 text-sm font-black uppercase text-blue-600 transition hover:bg-blue-100"
+                    >
+                      <Store size={18} />
+                      Go To Store
+                    </Link>
+                  )}
+                </section>
+              )}
             </div>
           </aside>
         </div>
       </section>
 
-      <ProductDetailsFooter />
+      <div className="mx-auto mt-5 w-[90%] lg:w-[80%]">
+        <div className="h-full min-h-[60vh] bg-white p-5">
+          <h3 className="text-lg font-semibold">
+            Product details of {productTitle}
+          </h3>
+          <div
+            className="product-details-content mt-4 max-w-none text-slate-600"
+            dangerouslySetInnerHTML={{
+              __html: product?.detailed_description || "",
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="mx-auto mt-5 w-[90%] lg:w-[80%]">
+        <div className="h-full min-h-[60vh] bg-white p-5">
+          <h3 className="text-lg font-semibold">
+            Ratings & Reviews of {productTitle}
+          </h3>
+
+          {productReviews.length > 0 ? (
+            <div className="mt-8 space-y-5">
+              {productReviews.map((review: any, index: number) => (
+                <div
+                  key={review?.id || review?._id || index}
+                  className="border-b border-slate-100 pb-5 last:border-b-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <Ratings rating={review?.rating || 0} />
+                    <span className="text-sm font-semibold text-slate-500">
+                      {review?.user?.name || review?.name || "Customer"}
+                    </span>
+                  </div>
+                  {review?.comment && (
+                    <p className="mt-3 text-sm font-medium leading-6 text-slate-600">
+                      {review.comment}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <ShippingAddressSection />
+          )}
+        </div>
+      </div>
+
+      {suggestedProducts.length > 0 && (
+        <section className="mx-auto mt-10 w-[90%] lg:w-[80%]">
+          <h2 className="mb-5 text-2xl font-bold text-slate-950">
+            You may also like
+          </h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {suggestedProducts.map((suggestedProduct: any) => (
+              <ProductCard
+                key={suggestedProduct.id || suggestedProduct.slug}
+                product={suggestedProduct}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
     </main>
   );
 }

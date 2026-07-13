@@ -1,11 +1,27 @@
 "use client";
 import { FiSearch, FiShoppingCart } from "react-icons/fi";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
 import HeaderUser from "./HeaderUser";
 import HeaderBottom from "./header.bottom";
 
 export default function Header() {
+  const router = useRouter();
+  const [searchText, setSearchText] = useState("");
 
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const query = searchText.trim();
+
+    if (!query) {
+      router.push("/products");
+      return;
+    }
+
+    router.push(`/products?search=${encodeURIComponent(query)}`);
+  };
   
   return (
     <div className="w-full bg-white shadow-sm">
@@ -21,16 +37,21 @@ export default function Header() {
           </span>
         </Link>
 
-        <div className="w-[50%] flex items-stretch">
+        <form className="w-[50%] flex items-stretch" onSubmit={handleSearchSubmit}>
           <input
             type="text"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
             placeholder="Search for products ..."
             className="w-full px-4 py-3 font-medium bg-gray-100 border-[2.5px] border-[#1a71eb] border-r-0 outline-none"
           />
-          <button className="bg-[#1a71eb] px-4 flex items-center justify-center cursor-pointer">
+          <button
+            type="submit"
+            className="bg-[#1a71eb] px-4 flex items-center justify-center cursor-pointer"
+          >
             <FiSearch className="text-white text-xl" />
           </button>
-        </div>
+        </form>
 
         <HeaderUser />
       </div>

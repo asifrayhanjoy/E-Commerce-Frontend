@@ -119,13 +119,15 @@ const ProductQuickView = ({
     "No description available.";
   const sizes = toList(product?.sizes);
   const availableSizes = sizes.length > 0 ? sizes : ["XS"];
-  const shop = product?.Shop || product?.shop || {};
-  const shopName = shop?.name || productName;
-  const shopAddress = shop?.address || "653 Banani, Dhaka";
+  const shop = product?.Shop || product?.shop;
+  const shopName = typeof shop?.name === "string" ? shop.name.trim() : "";
+  const shopAddress =
+    typeof shop?.address === "string" ? shop.address.trim() : "";
+  const shopIdValue = shop?.id || shop?._id;
   const shopRating = Number(shop?.ratings) || 0;
-  const shopAvatar =
-    shop?.avatar?.[0]?.url ||
-    "https://api.dicebear.com/8.x/personas/svg?seed=shop";
+  const shopAvatar = shop?.avatar?.find((image: { url?: string }) => image?.url)
+    ?.url;
+  const hasShop = Boolean(shopName || shopIdValue);
   const isInStock = Number(product?.stock ?? 0) > 0;
 
   return (
@@ -180,47 +182,59 @@ const ProductQuickView = ({
         </div>
 
         <div className="px-8 pb-10 pt-10">
-          <div className="flex items-start justify-between gap-6 border-b border-slate-200 pb-7 pr-14">
-            <div className="flex items-start gap-4">
-              <img
-                src={shopAvatar}
-                alt={shopName}
-                width={76}
-                height={76}
-                className="h-[76px] w-[76px] rounded-full object-cover"
-              />
-              <div>
-                <h3 className="text-2xl font-bold text-slate-950">
-                  {shopName}
-                </h3>
-                <div className="mt-2 flex gap-1">
-                  {Array.from({ length: 5 }).map((_, index) => (
-                    <Star
-                      key={index}
-                      size={22}
-                      className={
-                        index < Math.round(shopRating)
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-yellow-300"
-                      }
-                    />
-                  ))}
-                </div>
-                <div className="mt-2 flex items-center gap-2 text-base font-medium text-slate-500">
-                  <MapPin size={22} />
-                  <span>{shopAddress}</span>
+          {hasShop && (
+            <div className="flex items-start justify-between gap-6 border-b border-slate-200 pb-7 pr-14">
+              <div className="flex items-start gap-4">
+                {shopAvatar ? (
+                  <img
+                    src={shopAvatar}
+                    alt={shopName || "Shop avatar"}
+                    width={76}
+                    height={76}
+                    className="h-[76px] w-[76px] rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-[76px] w-[76px] items-center justify-center rounded-full bg-blue-50 text-2xl font-black text-blue-700">
+                    {shopName.charAt(0).toUpperCase() || "S"}
+                  </div>
+                )}
+                <div>
+                  {shopName && (
+                    <h3 className="text-2xl font-bold text-slate-950">
+                      {shopName}
+                    </h3>
+                  )}
+                  <div className="mt-2 flex gap-1">
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <Star
+                        key={index}
+                        size={22}
+                        className={
+                          index < Math.round(shopRating)
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "text-yellow-300"
+                        }
+                      />
+                    ))}
+                  </div>
+                  {shopAddress && (
+                    <div className="mt-2 flex items-center gap-2 text-base font-medium text-slate-500">
+                      <MapPin size={22} />
+                      <span>{shopAddress}</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <button
-              type="button"
-              className="flex h-[48px] shrink-0 cursor-pointer items-center gap-2 rounded-md bg-blue-700 px-5 text-base font-bold text-white shadow-md transition hover:bg-blue-800"
-            >
-              <MessageCircle size={22} />
-              Chat with Seller
-            </button>
-          </div>
+              <button
+                type="button"
+                className="flex h-[48px] shrink-0 cursor-pointer items-center gap-2 rounded-md bg-blue-700 px-5 text-base font-bold text-white shadow-md transition hover:bg-blue-800"
+              >
+                <MessageCircle size={22} />
+                Chat with Seller
+              </button>
+            </div>
+          )}
 
           <div className="pt-6">
             <h2 className="text-2xl font-bold text-slate-950">
@@ -366,10 +380,15 @@ const ProductCard = ({
     "https://images.unsplash.com/photo-1635405074683-96d6921a2a68?w=500&auto=format";
   const productTitle = product?.title || "Untitled product";
   const productName =
-    product?.Shop?.name || product?.shop?.name || product?.name || product?.brand || productTitle;
+    product?.Shop?.name ||
+    product?.shop?.name ||
+    product?.name ||
+    product?.brand ||
+    productTitle;
   const salePrice = product?.sale_price ?? product?.price;
   const regularPrice = product?.regular_price;
-  const soldCount = product?.sold ?? product?.totalSold ?? product?.sold_out ?? 0;
+  const soldCount =
+    product?.sold ?? product?.totalSold ?? product?.sold_out ?? 0;
   const isWishlisted = isInWishlist(product);
   const cartQuantity = getCartQuantity(product);
   const isAddedToCart = cartQuantity > 0;
@@ -401,24 +420,24 @@ const ProductCard = ({
   };
 
   return (
-    <div className="w-full h-[540px] bg-white rounded-lg relative overflow-hidden shadow-[0_18px_24px_-18px_rgba(15,23,42,0.45)]">
+    <div className="relative h-[430px] w-full overflow-hidden rounded-lg bg-white shadow-[0_18px_24px_-18px_rgba(15,23,42,0.45)]">
       {isEvent && (
-        <div className="absolute top-3 left-3 z-10 rounded bg-red-600 px-2 py-1 text-xs font-semibold text-white">
+        <div className="absolute left-4 top-4 z-10 rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white">
           OFFER
         </div>
       )}
 
       {product?.stock <= 5 && (
-        <div className="absolute top-3 right-3 z-10 rounded bg-yellow-400 px-2 py-1 text-xs font-semibold text-slate-900">
+        <div className="absolute right-4 top-4 z-10 rounded-full bg-yellow-400 px-3 py-1.5 text-sm font-bold leading-none text-slate-950">
           Limited Stock
         </div>
       )}
 
-      <div className="flex h-[360px] w-full bg-white pl-6 pr-3 pt-4">
+      <div className="flex h-[278px] w-full bg-white pl-5 pr-3 pt-5">
         <Link
           href={PRODUCT_DETAILS_PATH}
           onClick={() => saveSelectedProductDetails(product)}
-          className="block h-[330px] min-w-0 flex-1 overflow-hidden bg-white"
+          className="block h-[248px] min-w-0 flex-1 overflow-hidden bg-white"
         >
           <img
             src={imageUrl}
@@ -429,28 +448,28 @@ const ProductCard = ({
           />
         </Link>
 
-        <div className="flex w-12 shrink-0 flex-col items-center gap-3 pt-16">
+        <div className="flex w-11 shrink-0 flex-col items-center gap-3 pt-16">
           <button
             type="button"
             aria-label="Add to wishlist"
-            className="rounded-full bg-white p-[6px] shadow-md"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md"
             onClick={handleWishlistClick}
           >
             <Heart
               className="cursor-pointer text-red-500 transition hover:scale-110"
-              size={22}
+              size={24}
               fill={isWishlisted ? "red" : "none"}
             />
           </button>
           <button
             type="button"
             aria-label="Quick view"
-            className="rounded-full bg-white p-[6px] shadow-md"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md"
             onClick={() => setIsQuickViewOpen(true)}
           >
             <Eye
               className="cursor-pointer text-slate-900 transition hover:scale-110"
-              size={22}
+              size={24}
             />
           </button>
           <button
@@ -460,8 +479,10 @@ const ProductCard = ({
                 ? `Add to cart, ${cartQuantity} in cart`
                 : "Add to cart"
             }
-            className={`relative rounded-full p-[6px] shadow-md transition ${
-              isAddedToCart ? "bg-orange-50 ring-2 ring-orange-200" : "bg-white"
+            className={`relative flex h-10 w-10 items-center justify-center rounded-full shadow-md transition ${
+              isAddedToCart
+                ? "bg-orange-50 ring-2 ring-orange-200"
+                : "bg-white"
             }`}
             onClick={() => handleAddToCart()}
           >
@@ -469,7 +490,7 @@ const ProductCard = ({
               className={`cursor-pointer transition hover:scale-110 ${
                 isAddedToCart ? "text-orange-600" : "text-slate-900"
               }`}
-              size={22}
+              size={24}
             />
             {isAddedToCart && (
               <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[11px] font-bold leading-none text-white">
@@ -480,38 +501,38 @@ const ProductCard = ({
         </div>
       </div>
 
-      <div className="h-[180px] px-3 pb-5 pt-3">
+      <div className="h-[152px] px-5 pb-5 pt-3">
         <Link
           href={PRODUCT_DETAILS_PATH}
           onClick={() => saveSelectedProductDetails(product)}
           className="block"
         >
-          <p className="truncate px-2 text-sm font-medium text-blue-700">
+          <p className="truncate text-sm font-semibold text-blue-700">
             {productName}
           </p>
-          <h3 className="mt-2 line-clamp-1 px-2 text-base font-semibold text-slate-950">
+          <h3 className="mt-2 line-clamp-1 text-lg font-bold text-slate-950">
             {productTitle}
           </h3>
         </Link>
 
-        <div className="mt-2 px-2">
+        <div className="mt-2">
           <Ratings rating={product?.ratings} />
         </div>
 
-        <div className="mt-3 flex items-end justify-between gap-3 px-2">
+        <div className="mt-4 flex items-end justify-between gap-3">
           <div className="flex min-w-0 items-end gap-2">
             {salePrice !== undefined && salePrice !== null && (
-              <span className="whitespace-nowrap text-xl font-bold text-slate-950">
+              <span className="whitespace-nowrap text-[22px] font-black leading-none text-slate-950">
                 {formatPrice(salePrice)}
               </span>
             )}
             {regularPrice !== undefined && regularPrice !== null && (
-              <span className="truncate pb-0.5 text-sm font-semibold text-slate-400 line-through">
+              <span className="truncate pb-0.5 text-base font-bold text-slate-400 line-through">
                 {formatPrice(regularPrice)}
               </span>
             )}
           </div>
-          <span className="shrink-0 whitespace-nowrap pb-0.5 text-sm font-semibold text-emerald-600">
+          <span className="shrink-0 whitespace-nowrap pb-0.5 text-base font-bold text-emerald-600">
             {soldCount} sold
           </span>
         </div>
