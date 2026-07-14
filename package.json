@@ -18,6 +18,8 @@
   },
   "private": true,
   "dependencies": {
+    "@stripe/react-stripe-js": "^6.7.0",
+    "@stripe/stripe-js": "^9.9.0",
     "@tanstack/react-query": "^5.101.2",
     "@types/nodemailer": "^8.0.1",
     "lucide-react": "^1.21.0",

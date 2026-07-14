@@ -20,6 +20,7 @@ import {
   Receipt,
   Settings,
   ShoppingBag,
+  Trash2,
   Truck,
   User,
   X,
@@ -159,6 +160,17 @@ function ProfilePageContent() {
       });
       setAddressForm(emptyAddressForm);
       setIsAddressModalOpen(false);
+    },
+  });
+
+  const deleteAddressMutation = useMutation({
+    mutationFn: async (addressId: string) => {
+      await axiosInstance.delete(`/api/v1/auth/addresses/${addressId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["user-addresses"],
+      });
     },
   });
 
@@ -360,11 +372,11 @@ function ProfilePageContent() {
                     className="text-sm cursor-pointer font-bold text-blue-600"
                     onClick={openAddressModal}
                   >
-                    Add New Address
+                   + Add New Address
                   </button>
                 </div>
 
-                <div className="mt-7 space-y-4">
+                <div className="mt-7">
                   {isAddressLoading ? (
                     <div className="rounded border border-gray-100 bg-gray-50 p-4 text-sm font-medium text-gray-500">
                       Loading saved addresses...
@@ -374,22 +386,79 @@ function ProfilePageContent() {
                       {getErrorMessage(addressError)}
                     </div>
                   ) : savedAddresses.length > 0 ? (
-                    savedAddresses.map((address, index) => (
-                      <div
-                        key={address.id || address._id || index}
-                        className="rounded border border-gray-100 bg-gray-50 p-4 text-sm font-medium text-gray-600"
-                      >
-                        <p className="font-bold text-gray-900">
-                          {address.label}{" "}
-                          {address.isDefault ? "(Default)" : ""}
-                        </p>
-                        <p className="mt-2">{address.name}</p>
-                        <p className="mt-1">
-                          {address.street}, {address.city}, {address.zip}
-                        </p>
-                        <p className="mt-1">{address.country}</p>
+                    <>
+                      <div className="grid gap-5 sm:grid-cols-2">
+                        {savedAddresses.map((address, index) => {
+                          const addressId = address.id || address._id || "";
+                          const addressDetails = [
+                            address.street,
+                            address.city,
+                            address.zip,
+                            address.country,
+                          ]
+                            .filter(Boolean)
+                            .join(", ");
+                          const isDeleting =
+                            deleteAddressMutation.isPending &&
+                            deleteAddressMutation.variables === addressId;
+
+                          return (
+                            <div
+                              key={addressId || index}
+                              className="relative min-h-[132px] rounded-md border border-gray-200 bg-white px-4 py-3 shadow-[0_2px_20px_rgba(15,23,42,0.08)]"
+                            >
+                              <div className="flex gap-2.5">
+                                <MapPin
+                                  size={19}
+                                  strokeWidth={2}
+                                  className="mt-1 shrink-0 text-gray-400"
+                                  aria-hidden="true"
+                                />
+
+                                <div className="min-w-0 pr-14">
+                                  <p className="text-[15px] font-bold leading-5 text-gray-900">
+                                    {address.label}
+                                    {address.name ? ` - ${address.name}` : ""}
+                                  </p>
+                                  <p className="mt-1 text-[14px] font-semibold leading-5 text-gray-700">
+                                    {addressDetails ||
+                                      "Address details unavailable"}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {address.isDefault && (
+                                <span className="absolute right-3.5 top-2.5 rounded-md bg-blue-100 px-3 py-1 text-xs font-bold leading-none text-blue-600">
+                                  Default
+                                </span>
+                              )}
+
+                              <button
+                                type="button"
+                                disabled={!addressId || isDeleting}
+                                className="mt-4 cursor-pointer inline-flex items-center gap-2 text-[14px] font-bold text-red-500 transition hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                                onClick={() => {
+                                  if (!addressId) {
+                                    return;
+                                  }
+
+                                  deleteAddressMutation.mutate(addressId);
+                                }}
+                              >
+                                <Trash2 size={16} aria-hidden="true" />
+                                {isDeleting ? "Deleting..." : "Delete"}
+                              </button>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))
+
+                      {deleteAddressMutation.isError && (
+                        <p className="mt-3 text-sm font-medium text-red-600">
+                          {getErrorMessage(deleteAddressMutation.error)}
+                        </p>
+                      )}
+                    </>
                   ) : (
                     <p className="text-sm font-medium text-gray-500">
                       No saved address found.
