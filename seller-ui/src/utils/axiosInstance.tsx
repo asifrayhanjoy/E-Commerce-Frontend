@@ -52,9 +52,12 @@ axiosInstance.interceptors.response.use((response) => response, async (error) =>
       try {
         await axios.post(
           "http://localhost:8080/api/v1/auth/refresh-token",
-          {},
+          { role: "seller" },
           {
             withCredentials: true,
+            headers: {
+              "x-auth-role": "seller",
+            },
           }
         );
 
