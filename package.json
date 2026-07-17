@@ -3,18 +3,19 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "dev": "node ../tools/ecommerce-maintenance.mjs start --workspace fo --project E-Commerce --port 6001 -- nx dev E-Commerce --port=6001 --webpack",
-    "seller": "node ../tools/ecommerce-maintenance.mjs start --workspace fo --project seller-ui -- nx dev seller-ui --webpack",
-    "user": "node ../tools/ecommerce-maintenance.mjs start --workspace fo --project user-ui -- nx serve user-ui",
-    "admin": "node ../tools/ecommerce-maintenance.mjs start --workspace fo --project admin-ui -- nx serve admin-ui",
-    "build": "node ../tools/ecommerce-maintenance.mjs run --workspace fo --project E-Commerce --lock build -- nx build E-Commerce",
-    "build:seller": "node ../tools/ecommerce-maintenance.mjs run --workspace fo --project seller-ui --lock build -- nx build seller-ui",
-    "stop": "node ../tools/ecommerce-maintenance.mjs stop --workspace fo",
-    "sweep": "node ../tools/ecommerce-maintenance.mjs sweep --workspace fo",
-    "clean": "node ../tools/ecommerce-maintenance.mjs clean --workspace fo",
-    "reset": "node ../tools/ecommerce-maintenance.mjs reset --workspace fo",
-    "doctor": "node ../tools/ecommerce-maintenance.mjs doctor --workspace fo",
-    "health": "node ../tools/ecommerce-maintenance.mjs health --workspace fo --write"
+    "dev": "nx dev E-Commerce --port=6001 --webpack",
+    "seller": "nx dev seller-ui --port=6002 --webpack",
+    "user": "nx serve user-ui",
+    "admin": "nx dev admin-ui --port=6003",
+    "frontends": "node scripts/run-frontends.mjs",
+    "build": "nx build E-Commerce --webpack",
+    "build:seller": "nx build seller-ui --webpack",
+    "stop": "node -e \"console.error('No frontend stop command is configured; stop the dev server with Ctrl+C.'); process.exit(1)\"",
+    "sweep": "nx reset",
+    "clean": "nx reset",
+    "reset": "nx reset",
+    "doctor": "nx report",
+    "health": "nx report"
   },
   "private": true,
   "dependencies": {
@@ -22,6 +23,7 @@
     "@stripe/stripe-js": "^9.9.0",
     "@tanstack/react-query": "^5.101.2",
     "@types/nodemailer": "^8.0.1",
+    "bcrypt": "^6.0.0",
     "lucide-react": "^1.21.0",
     "next": "~16.2.10",
     "nodemailer": "^9.0.1",
@@ -65,7 +67,6 @@
     "typescript": "~5.9.2"
   },
   "workspaces": [
-    "apps/*",
-    "seller-ui"
+    "apps/*"
   ]
 }

@@ -78,27 +78,50 @@ export default function CartPage() {
   const [couponCode, setCouponCode] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
   const [isLoading, setLoading] = useState(false);
+  const [storedCouponCode, setStoredCouponCode] = useState("");
+  const [error, setError] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
+  const [discountAmount, setDiscountAmount] = useState<number>(0);
+  const [discountPercent, setDiscountPercent] = useState<number>(0);
+  const [discountedProductId, setDiscountedProductId] = useState<string>("");
+  const orderCartItems = cartItems.map(({ product, quantity }) => ({
+    id: product.id || product._id || product.productId || product.slug,
+    title: product.title || product.name,
+    quantity,
+    sale_price: Number(product.sale_price ?? product.price ?? 0),
+    shopId:
+      product.shopId ||
+      product.Shop?.id ||
+      product.Shop?._id ||
+      product.shop?.id ||
+      product.shop?._id,
+    selectedOptions: {},
+    discount_codes: (product as any).discount_codes || [],
+  }));
 
   const createPaymentSession = async () => {
+    if (addresses.length === 0 || !selectedAddressId) {
+      setCheckoutError("Please set your delivery address to create an order!");
+      return;
+    }
+
+    const appliedCoupon = storedCouponCode
+      ? {
+          storedCouponCode,
+          discountAmount,
+          discountPercent,
+          discountedProductId,
+        }
+      : null;
+
     setLoading(true);
+    setCheckoutError("");
 
     try {
       const response = await axios.post("/api/order/create-payment-session", {
-        cart: cartItems.map(({ product, quantity }) => ({
-          id: product.id || product._id || product.productId || product.slug,
-          title: product.title || product.name,
-          quantity,
-          sale_price: Number(product.sale_price ?? product.price ?? 0),
-          shopId:
-            product.shopId ||
-            product.Shop?.id ||
-            product.Shop?._id ||
-            product.shop?.id ||
-            product.shop?._id,
-          selectedOptions: {},
-        })),
+        cart: orderCartItems,
         selectedAddressId,
-        coupon: {},
+        coupon: appliedCoupon,
       });
 
       const sessionId = response.data?.sessionId;
@@ -109,6 +132,7 @@ export default function CartPage() {
       }
     } catch (error) {
       console.error(error);
+      setCheckoutError("Could not prepare checkout. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -130,6 +154,42 @@ export default function CartPage() {
     },
     staleTime: 1000 * 60,
   });
+
+  const couponCodeApplyHandler = async () => {
+    setError("");
+
+    if (!couponCode.trim()) {
+      setError("Coupon code is required!");
+      return;
+    }
+
+    try {
+      const res = await axios.put("/api/order/verify-coupon", {
+        couponCode: couponCode.trim(),
+        cart: orderCartItems,
+      });
+
+      if (res.data.valid) {
+        setStoredCouponCode(couponCode.trim());
+        setDiscountAmount(parseFloat(res.data.discountAmount));
+        setDiscountPercent(res.data.discount);
+        setDiscountedProductId(res.data.discountedProductId);
+        setCouponCode("");
+      } else {
+        setDiscountAmount(0);
+        setDiscountPercent(0);
+        setDiscountedProductId("");
+        setError(
+          res.data.message || "Coupon not valid for any items in cart."
+        );
+      }
+    } catch (error: any) {
+      setDiscountAmount(0);
+      setDiscountPercent(0);
+      setDiscountedProductId("");
+      setError(error?.response?.data?.message);
+    }
+  };
 
   useEffect(() => {
     if (addresses.length === 0) {
@@ -336,12 +396,18 @@ export default function CartPage() {
                   className="min-w-0 flex-1 px-3 text-base font-medium text-slate-700 outline-none placeholder:text-slate-400"
                 />
                 <button
+                  onClick={couponCodeApplyHandler}
                   type="button"
                   className="w-24 bg-blue-600 text-base font-semibold text-white transition hover:bg-blue-700"
                 >
                   Apply
                 </button>
               </div>
+              {error && (
+                <p className="mt-2 text-sm font-semibold text-red-600">
+                  {error}
+                </p>
+              )}
             </div>
 
             <div className="border-t border-slate-200 py-5">
@@ -409,6 +475,12 @@ export default function CartPage() {
               <span>Total</span>
               <span>{formatPrice(cartTotal)}</span>
             </div>
+
+            {checkoutError && (
+              <p className="mb-3 text-sm font-semibold text-red-600">
+                {checkoutError}
+              </p>
+            )}
 
             <button
               type="button"

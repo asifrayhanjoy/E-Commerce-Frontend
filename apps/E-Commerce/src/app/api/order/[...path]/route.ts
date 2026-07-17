@@ -64,3 +64,6 @@ const proxyOrderRequest = async (
 
 export const GET = proxyOrderRequest;
 export const POST = proxyOrderRequest;
+export const PUT = proxyOrderRequest;
+export const PATCH = proxyOrderRequest;
+export const DELETE = proxyOrderRequest;

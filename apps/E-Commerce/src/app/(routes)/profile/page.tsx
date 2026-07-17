@@ -3,12 +3,15 @@
 import QuickActionCard from "@/contexts/QuickActionCard";
 import useUser from "@/hooks/use.User";
 import axiosInstance from "@/utils/axiosinstance";
+import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck,
   Bell,
   CheckCircle,
   Clock,
+  Eye,
+  EyeOff,
   Gift,
   Inbox,
   Loader2,
@@ -35,12 +38,6 @@ import {
   type FormEvent,
 } from "react";
 
-const orderStats = [
-  { title: "Total Orders", count: 10, Icon: Clock },
-  { title: "Processing Orders", count: 4, Icon: Truck },
-  { title: "Completed Orders", count: 5, Icon: CheckCircle },
-];
-
 const emptyAddressForm = {
   label: "Home",
   name: "",
@@ -53,10 +50,58 @@ const emptyAddressForm = {
 
 type AddressForm = typeof emptyAddressForm;
 
+const emptyPasswordForm = {
+  currentPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+};
+
+type PasswordForm = typeof emptyPasswordForm;
+
 type UserAddress = Omit<AddressForm, "isDefault"> & {
   id?: string;
   _id?: string;
   isDefault?: boolean;
+};
+
+type ProfileOrderItem = {
+  id?: string;
+  title?: string;
+  name?: string;
+  quantity?: number;
+  sale_price?: number;
+};
+
+type ProfileOrder = {
+  id: string;
+  cart: ProfileOrderItem[];
+  itemCount?: number;
+  totalAmount?: number;
+  paymentStatus?: string;
+  deliveryStatus?: string;
+  paymentIntentId?: string | null;
+  paymentSessionId?: string | null;
+  createdAt?: string;
+  shop?: {
+    id?: string;
+    name?: string;
+    category?: string;
+    address?: string;
+    avatar?: { url?: string }[];
+  } | null;
+  shippingAddress?: UserAddress | null;
+};
+
+type ProfileOrderStats = {
+  totalOrders: number;
+  processingOrders: number;
+  completedOrders: number;
+};
+
+const emptyProfileOrderStats: ProfileOrderStats = {
+  totalOrders: 0,
+  processingOrders: 0,
+  completedOrders: 0,
 };
 
 const getAvatarUrl = (user: any) => {
@@ -79,6 +124,39 @@ const getErrorMessage = (error: any) =>
   error?.response?.data?.message ||
   error?.message ||
   "Something went wrong. Please try again.";
+
+const formatCurrency = (value?: number) =>
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(Number(value || 0));
+
+const formatOrderDate = (value?: string) => {
+  if (!value) {
+    return "N/A";
+  }
+
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
+const getOrderDisplayId = (order: ProfileOrder) =>
+  order.paymentSessionId || order.paymentIntentId || order.id;
+
+const getStatusBadgeClass = (status?: string) => {
+  if (status === "Delivered" || status === "Paid") {
+    return "border-emerald-100 bg-emerald-50 text-emerald-700";
+  }
+
+  if (status === "Cancelled" || status === "Failed") {
+    return "border-red-100 bg-red-50 text-red-600";
+  }
+
+  return "border-blue-100 bg-blue-50 text-blue-700";
+};
 
 interface NavItemProps {
   label: string;
@@ -126,6 +204,14 @@ function ProfilePageContent() {
   const [activeTab, setActiveTab] = useState(queryTab);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [addressForm, setAddressForm] = useState(emptyAddressForm);
+  const [passwordForm, setPasswordForm] = useState(emptyPasswordForm);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [visiblePasswordFields, setVisiblePasswordFields] = useState({
+    currentPassword: false,
+    newPassword: false,
+    confirmPassword: false,
+  });
 
   const {
     data: savedAddresses = [],
@@ -144,6 +230,47 @@ function ProfilePageContent() {
     },
     staleTime: 1000 * 60,
   });
+
+  const {
+    data: myOrdersData = {
+      orders: [] as ProfileOrder[],
+      stats: emptyProfileOrderStats,
+    },
+    isLoading: isOrdersLoading,
+    isError: isOrdersError,
+    error: ordersError,
+  } = useQuery({
+    queryKey: ["my-orders"],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const response = await axios.get("/api/order/my-orders");
+
+      return {
+        orders: Array.isArray(response.data?.orders)
+          ? (response.data.orders as ProfileOrder[])
+          : [],
+        stats: {
+          ...emptyProfileOrderStats,
+          ...(response.data?.stats || {}),
+        } as ProfileOrderStats,
+      };
+    },
+    staleTime: 1000 * 60,
+  });
+
+  const orderStats = [
+    { title: "Total Orders", count: myOrdersData.stats.totalOrders, Icon: Clock },
+    {
+      title: "Processing Orders",
+      count: myOrdersData.stats.processingOrders,
+      Icon: Truck,
+    },
+    {
+      title: "Completed Orders",
+      count: myOrdersData.stats.completedOrders,
+      Icon: CheckCircle,
+    },
+  ];
 
   const createAddressMutation = useMutation({
     mutationFn: async (payload: AddressForm) => {
@@ -171,6 +298,26 @@ function ProfilePageContent() {
       queryClient.invalidateQueries({
         queryKey: ["user-addresses"],
       });
+    },
+  });
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (payload: PasswordForm) => {
+      const response = await axios.put("/api/order/change-password", {
+        currentPassword: payload.currentPassword,
+        newPassword: payload.newPassword,
+      });
+
+      return response.data;
+    },
+    onSuccess: (data) => {
+      setPasswordForm(emptyPasswordForm);
+      setPasswordError("");
+      setPasswordSuccess(data?.message || "Password changed successfully!");
+    },
+    onError: (error) => {
+      setPasswordSuccess("");
+      setPasswordError(getErrorMessage(error));
     },
   });
 
@@ -222,6 +369,49 @@ function ProfilePageContent() {
   const handleAddressSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     createAddressMutation.mutate(addressForm);
+  };
+
+  const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+
+    setPasswordForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  };
+
+  const togglePasswordVisibility = (field: keyof PasswordForm) => {
+    setVisiblePasswordFields((current) => ({
+      ...current,
+      [field]: !current[field],
+    }));
+  };
+
+  const handlePasswordSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (
+      !passwordForm.currentPassword ||
+      !passwordForm.newPassword ||
+      !passwordForm.confirmPassword
+    ) {
+      setPasswordError("All password fields are required.");
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters long.");
+      return;
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("New password and confirmation do not match.");
+      return;
+    }
+
+    changePasswordMutation.mutate(passwordForm);
   };
 
   return (
@@ -357,6 +547,108 @@ function ProfilePageContent() {
                   {user.points || 0}
                 </p>
               </div>
+            ) : activeTab === "My Orders" ? (
+              <div>
+                <h2 className="text-[25px] font-bold leading-none text-gray-900">
+                  My Orders
+                </h2>
+
+                <div className="mt-8 overflow-x-auto">
+                  <table className="w-full min-w-[620px] table-fixed text-left">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="w-[24%] px-3 pb-4 text-[15px] font-bold text-gray-700">
+                          Order ID
+                        </th>
+                        <th className="w-[18%] px-3 pb-4 text-[15px] font-bold text-gray-700">
+                          Status
+                        </th>
+                        <th className="w-[20%] px-3 pb-4 text-[15px] font-bold text-gray-700">
+                          Total ($)
+                        </th>
+                        <th className="w-[20%] px-3 pb-4 text-[15px] font-bold text-gray-700">
+                          Date
+                        </th>
+                        <th className="w-[18%] px-3 pb-4 text-[15px] font-bold text-gray-700">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {isOrdersLoading ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="h-[270px] text-center text-[17px] font-semibold text-gray-700"
+                          >
+                            Loading orders...
+                          </td>
+                        </tr>
+                      ) : isOrdersError ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="h-[270px] text-center text-[15px] font-semibold text-red-600"
+                          >
+                            {getErrorMessage(ordersError)}
+                          </td>
+                        </tr>
+                      ) : myOrdersData.orders.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            className="h-[270px] text-center text-[17px] font-semibold text-gray-900"
+                          >
+                            No orders available yet!
+                          </td>
+                        </tr>
+                      ) : (
+                        myOrdersData.orders.map((order) => {
+                          const orderId = getOrderDisplayId(order);
+                          const shortOrderId = orderId.slice(-8).toUpperCase();
+
+                          return (
+                            <tr
+                              key={order.id}
+                              className="border-b border-gray-100"
+                            >
+                              <td className="px-3 py-4 text-sm font-semibold text-gray-700">
+                                #{shortOrderId}
+                              </td>
+                              <td className="px-3 py-4">
+                                <span
+                                  className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${getStatusBadgeClass(
+                                    order.deliveryStatus
+                                  )}`}
+                                >
+                                  {order.deliveryStatus || "Ordered"}
+                                </span>
+                              </td>
+                              <td className="px-3 py-4 text-sm font-semibold text-gray-700">
+                                {formatCurrency(order.totalAmount).replace(
+                                  "$",
+                                  ""
+                                )}
+                              </td>
+                              <td className="px-3 py-4 text-sm font-semibold text-gray-700">
+                                {formatOrderDate(order.createdAt)}
+                              </td>
+                              <td className="px-3 py-4">
+                                <button
+                                  type="button"
+                                  className="text-sm font-bold text-blue-600 transition hover:text-blue-700"
+                                >
+                                  View
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             ) : activeTab === "Shipping Address" ? (
               <div>
                 <h2 className="text-[25px] font-bold leading-none text-gray-900">
@@ -465,6 +757,105 @@ function ProfilePageContent() {
                     </p>
                   )}
                 </div>
+              </div>
+            ) : activeTab === "Change Password" ? (
+              <div>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-[25px] font-bold leading-none text-gray-900">
+                      Change Password
+                    </h2>
+                    <p className="mt-2 text-sm font-medium text-gray-500">
+                      Update your account password.
+                    </p>
+                  </div>
+                  <div className="hidden h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-blue-600 sm:flex">
+                    <Lock size={22} aria-hidden="true" />
+                  </div>
+                </div>
+
+                <form
+                  onSubmit={handlePasswordSubmit}
+                  className="mt-8 max-w-[520px] space-y-5"
+                >
+                  {[
+                    {
+                      label: "Current Password",
+                      name: "currentPassword" as const,
+                      placeholder: "Enter current password",
+                    },
+                    {
+                      label: "New Password",
+                      name: "newPassword" as const,
+                      placeholder: "Enter new password",
+                    },
+                    {
+                      label: "Confirm New Password",
+                      name: "confirmPassword" as const,
+                      placeholder: "Confirm new password",
+                    },
+                  ].map((field) => {
+                    const isVisible = visiblePasswordFields[field.name];
+
+                    return (
+                      <label
+                        key={field.name}
+                        className="block text-sm font-bold text-gray-800"
+                      >
+                        {field.label}
+                        <div className="mt-2 flex h-12 items-center rounded-md border border-gray-200 bg-gray-50 px-4 transition focus-within:border-blue-500 focus-within:bg-white">
+                          <input
+                            name={field.name}
+                            type={isVisible ? "text" : "password"}
+                            value={passwordForm[field.name]}
+                            onChange={handlePasswordChange}
+                            placeholder={field.placeholder}
+                            disabled={changePasswordMutation.isPending}
+                            className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-gray-900 outline-none placeholder:text-gray-400 disabled:cursor-not-allowed"
+                          />
+                          <button
+                            type="button"
+                            aria-label={
+                              isVisible
+                                ? `Hide ${field.label.toLowerCase()}`
+                                : `Show ${field.label.toLowerCase()}`
+                            }
+                            onClick={() => togglePasswordVisibility(field.name)}
+                            className="ml-3 text-gray-400 transition hover:text-gray-700"
+                          >
+                            {isVisible ? (
+                              <EyeOff size={18} aria-hidden="true" />
+                            ) : (
+                              <Eye size={18} aria-hidden="true" />
+                            )}
+                          </button>
+                        </div>
+                      </label>
+                    );
+                  })}
+
+                  {passwordError && (
+                    <p className="rounded-md border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                      {passwordError}
+                    </p>
+                  )}
+
+                  {passwordSuccess && (
+                    <p className="rounded-md border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+                      {passwordSuccess}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={changePasswordMutation.isPending}
+                    className="h-12 rounded-md bg-blue-600 px-6 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {changePasswordMutation.isPending
+                      ? "Updating..."
+                      : "Update Password"}
+                  </button>
+                </form>
               </div>
             ) : (
               <h2 className="text-[26px] font-bold leading-none text-gray-900">

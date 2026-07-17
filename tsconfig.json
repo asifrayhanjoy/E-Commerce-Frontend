@@ -10,7 +10,10 @@
       "path": "./apps/E-Commerce"
     },
     {
-      "path": "./seller-ui"
+      "path": "./apps/admin-ui"
+    },
+    {
+      "path": "./apps/seller-ui"
     }
   ]
 }
