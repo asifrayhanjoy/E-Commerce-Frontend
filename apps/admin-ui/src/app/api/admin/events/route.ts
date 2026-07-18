@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 const backendBases = [
   process.env.NEXT_PUBLIC_API_URL,
   process.env.NEXT_PUBLIC_SERVER_URI,
+  "http://localhost:8181/api/v1",
   "http://localhost:8383/api/v1",
   "http://localhost:8080/api/v1",
 ].filter(Boolean) as string[];
@@ -22,7 +23,11 @@ const pagination = (page: number, limit: number, total = 0) => ({
 
 const getBackendEvents = async (query: string) => {
   for (const base of backendBases) {
-    for (const path of [`/admin/events${query}`, `/auth/admin/events${query}`]) {
+    for (const path of [
+      `/products/get-public-events${query}`,
+      `/admin/events${query}`,
+      `/auth/admin/events${query}`,
+    ]) {
       try {
         const response = await fetch(`${base}${path}`, { cache: "no-store" });
         if (!response.ok) continue;

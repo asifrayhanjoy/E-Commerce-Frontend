@@ -15,6 +15,10 @@ import Link from "next/link";
 import { useMemo } from "react";
 import ProductCard from "@/components/ProductCard/page";
 import axiosInstance from "@/utils/axiosinstance";
+import {
+  getShopAvatarImage,
+  getShopCoverImage,
+} from "@/utils/shopImages";
 
 type ShopImage = {
   url?: string;
@@ -62,7 +66,13 @@ type Shop = {
   bio?: string;
   category?: string;
   coverBanner?: ShopImage[] | ShopImage | string | null;
+  coverBannerUrl?: string;
+  coverPhoto?: string;
+  coverPhotoUrl?: string;
   avatar?: ShopImage[];
+  avatarUrl?: string;
+  profilePhoto?: string;
+  profilePhotoUrl?: string;
   address?: string;
   opening_hours?: string;
   website?: string;
@@ -76,29 +86,6 @@ type ShopsResponse = {
 };
 
 const normalizeId = (value?: string) => decodeURIComponent(value || "").trim();
-
-const getCoverImage = (shop?: Shop) => {
-  const coverBanner = shop?.coverBanner;
-
-  if (typeof coverBanner === "string" && coverBanner) {
-    return coverBanner;
-  }
-
-  if (Array.isArray(coverBanner)) {
-    return coverBanner.find((image) => image?.url)?.url;
-  }
-
-  if (coverBanner && typeof coverBanner === "object") {
-    return coverBanner.url;
-  }
-
-  return shop?.products?.find((product) => product.images?.[0]?.url)?.images?.[0]
-    ?.url;
-};
-
-const getAvatarImage = (shop?: Shop) =>
-  shop?.avatar?.find((image) => image?.url)?.url ||
-  shop?.sellers?.avatar?.find((image) => image?.url)?.url;
 
 const getShopId = (shop?: Shop) => shop?.id || shop?._id || "";
 
@@ -157,8 +144,8 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
     () => shops.find((item) => getShopId(item) === selectedShopId),
     [selectedShopId, shops]
   );
-  const coverImage = getCoverImage(shop);
-  const avatarImage = getAvatarImage(shop);
+  const coverImage = getShopCoverImage(shop);
+  const avatarImage = getShopAvatarImage(shop);
   const address = shop?.address?.trim();
   const category = shop?.category?.trim();
   const productCount = shop?.products?.length || 0;

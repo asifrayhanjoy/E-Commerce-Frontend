@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -11,15 +13,9 @@ import {
   Truck,
   type LucideIcon,
 } from "lucide-react";
-
-type SearchParams = Record<string, string | string[] | undefined>;
-
-type PaymentSuccessPageProps = {
-  searchParams?: Promise<SearchParams>;
-};
-
-const getParam = (value: string | string[] | undefined) =>
-  Array.isArray(value) ? value[0] : value;
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import axios from "axios";
 
 const compactReference = (value?: string) => {
   if (!value) {
@@ -77,14 +73,69 @@ const nextSteps: {
   },
 ];
 
-export default async function Page({ searchParams }: PaymentSuccessPageProps) {
-  const params = searchParams ? await searchParams : {};
-  const sessionId = getParam(params.sessionId);
-  const paymentIntent = getParam(params.payment_intent);
-  const redirectStatus = getParam(params.redirect_status);
+const PaymentSuccessFallback = () => (
+  <main className="min-h-screen bg-[#f6f7fb] px-4 py-8 text-slate-950 sm:px-6 lg:px-8">
+    <div className="mx-auto min-h-[420px] w-full max-w-6xl rounded-xl border border-slate-200 bg-white" />
+  </main>
+);
+
+function PaymentSuccessContent() {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("sessionId") || "";
+  const paymentIntent = searchParams.get("payment_intent") || "";
+  const redirectStatus = searchParams.get("redirect_status") || "";
+  const [confirmStatus, setConfirmStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [confirmMessage, setConfirmMessage] = useState("");
   const reference = sessionId || paymentIntent;
   const statusLabel =
-    redirectStatus === "succeeded" ? "Payment verified" : "Payment received";
+    confirmStatus === "saved"
+      ? "Order saved"
+      : redirectStatus === "succeeded"
+      ? "Payment verified"
+      : "Payment received";
+
+  useEffect(() => {
+    if (!sessionId || !paymentIntent || redirectStatus !== "succeeded") {
+      return;
+    }
+
+    let isMounted = true;
+    setConfirmStatus("saving");
+    setConfirmMessage("Saving your order to the backend...");
+
+    axios
+      .post("/api/order/confirm-payment-session", {
+        sessionId,
+        paymentIntentId: paymentIntent,
+      })
+      .then((response) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setConfirmStatus("saved");
+        setConfirmMessage(
+          response.data?.message || "Your order has been saved."
+        );
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return;
+        }
+
+        setConfirmStatus("error");
+        setConfirmMessage(
+          error?.response?.data?.message ||
+            "Payment succeeded, but the order could not be saved."
+        );
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [paymentIntent, redirectStatus, sessionId]);
 
   const receiptRows = [
     { label: "Payment status", value: statusLabel },
@@ -131,6 +182,18 @@ export default async function Page({ searchParams }: PaymentSuccessPageProps) {
               We received your payment and the order is ready for the next step.
               You can keep shopping or check your order status from your profile.
             </p>
+
+            {confirmMessage && (
+              <p
+                className={`mt-4 max-w-2xl rounded-lg px-4 py-3 text-sm font-semibold ${
+                  confirmStatus === "error"
+                    ? "border border-red-200 bg-red-50 text-red-700"
+                    : "border border-emerald-200 bg-emerald-50 text-emerald-700"
+                }`}
+              >
+                {confirmMessage}
+              </p>
+            )}
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
@@ -246,5 +309,13 @@ export default async function Page({ searchParams }: PaymentSuccessPageProps) {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<PaymentSuccessFallback />}>
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

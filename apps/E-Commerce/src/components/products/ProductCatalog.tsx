@@ -48,6 +48,7 @@ type CatalogProduct = {
 
 type CatalogResponse = {
   products?: CatalogProduct[];
+  events?: CatalogProduct[];
   total?: number;
   currentPage?: number;
   totalPages?: number;
@@ -94,18 +95,6 @@ const formatNumber = (value: number) =>
 const getProductPrice = (product: CatalogProduct) => {
   const price = Number(product.sale_price ?? product.price ?? 0);
   return Number.isFinite(price) ? price : 0;
-};
-
-const hasProductOffer = (product: CatalogProduct) => {
-  const salePrice = getProductPrice(product);
-  const regularPrice = Number(product.regular_price ?? 0);
-
-  return (
-    Number.isFinite(regularPrice) &&
-    regularPrice > 0 &&
-    salePrice > 0 &&
-    regularPrice > salePrice
-  );
 };
 
 const toValueList = (value: unknown) => {
@@ -223,8 +212,21 @@ export default function ProductCatalog({
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["product-catalog-all-products"],
+    queryKey: ["product-catalog-all-products", mode],
     queryFn: async () => {
+      if (isOffersPage) {
+        const response = await axiosInstance.get<CatalogResponse>(
+          "/api/v1/products/get-public-events?page=1&limit=100"
+        );
+
+        return {
+          ...response.data,
+          products: Array.isArray(response.data?.events)
+            ? response.data.events
+            : response.data?.products,
+        };
+      }
+
       const response = await axiosInstance.get<CatalogResponse>(
         "/api/v1/products/get-all-products?page=1&limit=100"
       );
@@ -235,16 +237,9 @@ export default function ProductCatalog({
   });
 
   const backendProducts = Array.isArray(data?.products) ? data.products : [];
-  const catalogProducts = useMemo(
-    () =>
-      isOffersPage
-        ? backendProducts.filter((product) => hasProductOffer(product))
-        : backendProducts,
-    [backendProducts, isOffersPage]
-  );
   const filteredProducts = useMemo(
     () =>
-      catalogProducts.filter((product) => {
+      backendProducts.filter((product) => {
         const matchesSearch =
           !searchQuery ||
           getSearchableProductText(product).includes(searchQuery);
@@ -273,7 +268,7 @@ export default function ProductCatalog({
       }),
     [
       appliedMaxPrice,
-      catalogProducts,
+      backendProducts,
       minRating,
       searchQuery,
       selectedCategories,

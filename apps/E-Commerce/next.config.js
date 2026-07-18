@@ -23,6 +23,18 @@ function mergeIgnoredWatchPaths(existingIgnored) {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async rewrites() {
+    const chattingServiceUrl = (
+      process.env.CHATTING_SERVICE_URL || "http://localhost:8484"
+    ).replace(/\/$/, "");
+
+    return [
+      {
+        source: "/api/v1/chats/:path*",
+        destination: `${chattingServiceUrl}/api/v1/chats/:path*`,
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

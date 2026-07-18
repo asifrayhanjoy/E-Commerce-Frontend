@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getDatabaseSeller } from "../../_lib/admin-data";
+import { getDatabaseSeller, normalizeAdminSeller } from "../../_lib/admin-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,7 +45,10 @@ export async function GET(_request: NextRequest, context: RouteContext) {
   try {
     const backendSeller = await getBackendSeller(sellerId);
     if (backendSeller) {
-      return NextResponse.json({ success: true, seller: backendSeller });
+      return NextResponse.json({
+        success: true,
+        seller: normalizeAdminSeller(backendSeller),
+      });
     }
   } catch {
   }

@@ -6,10 +6,10 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import axios from "axios";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ArrowLeft, Check, ChevronRight, Package, Save } from "lucide-react";
+import axiosInstance from "@/utils/axiosInstance";
 
 const DELIVERY_STEPS = [
   "Ordered",
@@ -94,7 +94,7 @@ const normalizeDeliveryStatus = (value?: string | null): DeliveryStatus =>
   value && isDeliveryStatus(value) ? value : "Ordered";
 
 const fetchSellerOrder = async (orderId: string) => {
-  const response = await axios.get(
+  const response = await axiosInstance.get(
     `/api/order/get-Seller-Order/${encodeURIComponent(orderId)}`,
     { withCredentials: true }
   );
@@ -109,7 +109,7 @@ const updateDeliveryStatus = async ({
   orderId: string;
   deliveryStatus: DeliveryStatus;
 }) => {
-  const response = await axios.patch(
+  const response = await axiosInstance.patch(
     `/api/order/get-Seller-Order/${encodeURIComponent(orderId)}/delivery-status`,
     { deliveryStatus },
     { withCredentials: true }

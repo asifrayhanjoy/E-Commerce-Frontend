@@ -1,8 +1,20 @@
 import axios from "axios";
 
+const chatApiBaseURL = process.env.NEXT_PUBLIC_CHAT_API_URL || "";
+
 const axiosInstance = axios.create({
   baseURL: "http://localhost:8080",
   withCredentials: true,
+});
+
+axiosInstance.interceptors.request.use((config) => {
+  const requestUrl = String(config.url || "");
+
+  if (requestUrl.startsWith("/api/v1/chats")) {
+    config.baseURL = chatApiBaseURL;
+  }
+
+  return config;
 });
 
 let isRefreshing = false;
@@ -25,12 +37,6 @@ const onRefreshSuccess = () => {
   refreshSubscribers.forEach((callback) => callback());
   refreshSubscribers = [];
 };
-
-// Handle API requests
-axiosInstance.interceptors.request.use(
-  (config) => config,
-  (error) => Promise.reject(error)
-);
 
 // Handle expired tokens and refresh logic
 axiosInstance.interceptors.response.use((response) => response, async (error) => {

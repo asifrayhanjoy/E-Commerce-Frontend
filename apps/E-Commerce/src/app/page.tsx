@@ -4,6 +4,10 @@ import Hero from "@/components/Hero/page";
 import ProductCard from "@/components/ProductCard/page";
 import SectionTitle from "@/components/SectionTitle/page";
 import axiosInstance from "@/utils/axiosinstance";
+import {
+  getShopAvatarImage,
+  getShopCoverImage,
+} from "@/utils/shopImages";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, Heart, MapPin, ShoppingBag, Star } from "lucide-react";
 import Link from "next/link";
@@ -28,7 +32,13 @@ type HomeShop = {
   name?: string;
   category?: string;
   coverBanner?: ShopImage[] | ShopImage | string | null;
+  coverBannerUrl?: string;
+  coverPhoto?: string;
+  coverPhotoUrl?: string;
   avatar?: ShopImage[];
+  avatarUrl?: string;
+  profilePhoto?: string;
+  profilePhotoUrl?: string;
   address?: string;
   ratings?: number;
   followersCount?: number;
@@ -99,29 +109,6 @@ const getProductKey = (product: HomeProduct, section: string, index: number) =>
   product.id || product._id || product.slug || `${section}-${index}`;
 
 const getShopId = (shop: HomeShop) => shop.id || shop._id || "";
-
-const getShopCoverImage = (shop: HomeShop) => {
-  const coverBanner = shop.coverBanner;
-
-  if (typeof coverBanner === "string" && coverBanner.trim()) {
-    return coverBanner;
-  }
-
-  if (Array.isArray(coverBanner)) {
-    return coverBanner.find((image) => image?.url)?.url;
-  }
-
-  if (coverBanner && typeof coverBanner === "object") {
-    return coverBanner.url;
-  }
-
-  return shop.products?.find((product) => product.images?.[0]?.url)?.images?.[0]
-    ?.url;
-};
-
-const getShopAvatarImage = (shop: HomeShop) =>
-  shop.avatar?.find((image) => image?.url)?.url ||
-  shop.sellers?.avatar?.find((image) => image?.url)?.url;
 
 const getShopFollowers = (shop: HomeShop) => {
   if (typeof shop.followersCount === "number") {

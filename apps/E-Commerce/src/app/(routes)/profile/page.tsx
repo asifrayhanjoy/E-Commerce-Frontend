@@ -3,8 +3,10 @@
 import QuickActionCard from "@/contexts/QuickActionCard";
 import useUser from "@/hooks/use.User";
 import axiosInstance from "@/utils/axiosinstance";
+import { getImageUrl } from "@/utils/shopImages";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import {
   BadgeCheck,
   Bell,
@@ -105,11 +107,18 @@ const emptyProfileOrderStats: ProfileOrderStats = {
 };
 
 const getAvatarUrl = (user: any) => {
-  if (Array.isArray(user?.avatar)) {
-    return user.avatar.find((image: { url?: string }) => image?.url)?.url;
-  }
-
-  return user?.avatar?.url;
+  return getImageUrl(
+    user?.avatar,
+    user?.avatarUrl,
+    user?.profilePhoto,
+    user?.profilePhotoUrl,
+    user?.profileImage,
+    user?.profileImageUrl,
+    user?.image,
+    user?.imageUrl,
+    user?.picture,
+    user?.photo
+  );
 };
 
 const formatJoinedDate = (value?: string) => {
@@ -606,6 +615,7 @@ function ProfilePageContent() {
                         myOrdersData.orders.map((order) => {
                           const orderId = getOrderDisplayId(order);
                           const shortOrderId = orderId.slice(-8).toUpperCase();
+                          const routeOrderId = order.id || orderId;
 
                           return (
                             <tr
@@ -634,12 +644,14 @@ function ProfilePageContent() {
                                 {formatOrderDate(order.createdAt)}
                               </td>
                               <td className="px-3 py-4">
-                                <button
-                                  type="button"
+                                <Link
+                                  href={`/order/${encodeURIComponent(
+                                    routeOrderId
+                                  )}`}
                                   className="text-sm font-bold text-blue-600 transition hover:text-blue-700"
                                 >
-                                  View
-                                </button>
+                                  Track Order ↗
+                                </Link>
                               </td>
                             </tr>
                           );

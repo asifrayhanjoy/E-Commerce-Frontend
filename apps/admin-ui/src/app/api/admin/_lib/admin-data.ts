@@ -78,6 +78,8 @@ const getPrisma = () => {
 };
 
 const collectionNames: Record<string, string> = {
+  admin: "admins",
+  admins: "admins",
   user: "users",
   users: "users",
   user_address: "user_addresses",
@@ -95,6 +97,11 @@ const collectionNames: Record<string, string> = {
   shops: "shops",
   order: "orders",
   orders: "orders",
+  notification: "notifications",
+  notifications: "notifications",
+  site_config: "site_config",
+  siteConfig: "site_config",
+  customization: "site_config",
 };
 
 const getCollectionName = (names: string[]) =>
@@ -372,21 +379,75 @@ const formatDate = (value: any) => {
   return new Intl.DateTimeFormat("en-GB").format(date);
 };
 
-const getImage = (...values: any[]) => {
-  for (const value of values) {
-    if (typeof value === "string" && value.trim()) return value.trim();
-    if (Array.isArray(value) && value.length > 0) {
-      const image = getImage(value[0]);
-      if (image) return image;
+const imageFieldNames = [
+  "url",
+  "secure_url",
+  "secureUrl",
+  "src",
+  "path",
+  "image",
+  "imageUrl",
+  "image_url",
+  "avatar",
+  "avatarUrl",
+  "avatar_url",
+  "thumbnail",
+  "thumbnailUrl",
+  "thumbnail_url",
+  "profileImage",
+  "profile_image",
+  "profilePicture",
+  "profile_picture",
+  "picture",
+  "photo",
+  "logo",
+];
+
+const getImageFromValue = (value: any): string => {
+  const normalizedValue = normalizeMongoValue(value);
+
+  if (typeof normalizedValue === "string") {
+    const image = normalizedValue.trim();
+    if (!image || image === "null" || image === "undefined") return "";
+
+    if (image.startsWith("{") || image.startsWith("[")) {
+      try {
+        return getImageFromValue(JSON.parse(image));
+      } catch {
+        return image;
+      }
     }
-    if (value && typeof value === "object") {
-      const image = getImage(value.url, value.secure_url, value.src);
+
+    return image;
+  }
+
+  if (Array.isArray(normalizedValue)) {
+    for (const item of normalizedValue) {
+      const image = getImageFromValue(item);
       if (image) return image;
     }
   }
 
-  return fallbackImage;
+  if (normalizedValue && typeof normalizedValue === "object") {
+    for (const fieldName of imageFieldNames) {
+      const image = getImageFromValue(normalizedValue[fieldName]);
+      if (image) return image;
+    }
+  }
+
+  return "";
 };
+
+const getOptionalImage = (...values: any[]) => {
+  for (const value of values) {
+    const image = getImageFromValue(value);
+    if (image) return image;
+  }
+
+  return "";
+};
+
+const getImage = (...values: any[]) => getOptionalImage(...values) || fallbackImage;
 
 const getStringList = (...values: any[]) => {
   for (const value of values) {
@@ -613,6 +674,650 @@ const mapUser = (
   };
 };
 
+const adminEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const normalizeAdminEmail = (value: unknown) =>
+  typeof value === "string" ? value.trim().toLowerCase() : "";
+
+const getAdminHttpError = (message: string, status: number) =>
+  Object.assign(new Error(message), { status });
+
+const isDuplicateAdminError = (error: unknown) => {
+  const code = (error as { code?: string | number })?.code;
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+
+  return (
+    code === "P2002" ||
+    code === 11000 ||
+    message.includes("e11000") ||
+    message.includes("duplicate key")
+  );
+};
+
+const hashAdminPassword = async (password: string) => {
+  const requireFromBackend = getBackendRequire();
+  const bcrypt = requireFromBackend("bcryptjs");
+  return bcrypt.hash(password, 10) as Promise<string>;
+};
+
+const mapAdmin = (admin: AnyRecord) => ({
+  id: getId(admin),
+  name: getText(admin.name, "Admin"),
+  email: getText(admin.email),
+  role: "admin",
+  createdAt: admin.createdAt,
+});
+
+export const normalizeAdminAccount = (admin: AnyRecord) => mapAdmin(admin);
+
+export const getDatabaseAdmins = async (
+  search = "",
+  page = 1,
+  limit = 100
+) => {
+  const admins = await safeFindAll(["admin", "admins"]);
+  const mapped = sortByDateDesc(admins.map(mapAdmin)).filter((admin) =>
+    includesSearch(admin, search, ["name", "email", "role"])
+  );
+  const safePage = Math.max(1, Number(page) || 1);
+  const safeLimit = Math.max(1, Number(limit) || 100);
+  const totalAdmins = mapped.length;
+  const totalPages = Math.max(1, Math.ceil(totalAdmins / safeLimit));
+  const currentPage = Math.min(safePage, totalPages);
+  const start = (currentPage - 1) * safeLimit;
+
+  return {
+    admins: mapped.slice(start, start + safeLimit),
+    pagination: {
+      page: currentPage,
+      limit: safeLimit,
+      total: totalAdmins,
+      totalAdmins,
+      totalPages,
+    },
+  };
+};
+
+export const createDatabaseAdmin = async ({
+  email: rawEmail,
+  password: rawPassword,
+}: {
+  email: string;
+  password: string;
+}) => {
+  const email = normalizeAdminEmail(rawEmail);
+  const password = typeof rawPassword === "string" ? rawPassword : "";
+
+  if (!email || !password) {
+    throw getAdminHttpError("Admin Gmail and password are required.", 400);
+  }
+
+  if (!adminEmailRegex.test(email)) {
+    throw getAdminHttpError("Enter a valid admin Gmail.", 400);
+  }
+
+  const existingAdmin = (await safeFindAll(["admin", "admins"])).find(
+    (admin: AnyRecord) => normalizeAdminEmail(admin.email) === email
+  );
+
+  if (existingAdmin) {
+    throw getAdminHttpError("Admin already exists with this Gmail.", 409);
+  }
+
+  const adminData = {
+    name: "Admin",
+    email,
+    password: await hashAdminPassword(password),
+  };
+
+  try {
+    const delegate = getDelegate(["admin", "admins"]);
+
+    if (delegate?.create) {
+      return mapAdmin(
+        await delegate.create({
+          data: adminData,
+        })
+      );
+    }
+  } catch (error) {
+    if (isDuplicateAdminError(error)) {
+      throw getAdminHttpError("Admin already exists with this Gmail.", 409);
+    }
+  }
+
+  try {
+    const prisma = getPrisma();
+    const now = new Date();
+    const rawAdminData = {
+      ...adminData,
+      createdAt: { $date: now.toISOString() },
+      updatedAt: { $date: now.toISOString() },
+    };
+
+    if (!prisma?.$runCommandRaw) {
+      throw getAdminHttpError("Admin database connection is unavailable.", 500);
+    }
+
+    await prisma.$runCommandRaw({
+      insert: "admins",
+      documents: [rawAdminData],
+    });
+    const admin = (await safeRawFindAll(["admin", "admins"])).find(
+      (row: AnyRecord) => normalizeAdminEmail(row.email) === email
+    );
+
+    return mapAdmin(admin ?? { ...adminData, createdAt: now });
+  } catch (error) {
+    if (isDuplicateAdminError(error)) {
+      throw getAdminHttpError("Admin already exists with this Gmail.", 409);
+    }
+
+    throw error;
+  }
+};
+
+const mapNotification = (notification: AnyRecord) => ({
+  id: getId(notification),
+  title: getText(notification.title, "Notification"),
+  message: getText(notification.message),
+  creatorId: getText(notification.creatorId, "admin"),
+  receiverId: getText(notification.receiverId, "all"),
+  redirectLink: getText(notification.redirect_link, notification.redirectLink),
+  created: formatDate(notification.createdAt),
+  createdAt: notification.createdAt,
+});
+
+export const normalizeAdminNotification = (notification: AnyRecord) =>
+  mapNotification(notification);
+
+const getNotificationHttpError = (message: string, status: number) =>
+  Object.assign(new Error(message), { status });
+
+const getNotificationPayload = (body: AnyRecord) => ({
+  title: getText(body.title),
+  message: getText(body.message),
+  creatorId: getText(body.creatorId, "admin"),
+  receiverId: getText(body.receiverId, body.target, "all"),
+  redirectLink: getText(body.redirectLink, body.redirect_link),
+});
+
+export const getDatabaseNotifications = async (
+  search = "",
+  page = 1,
+  limit = 20
+) => {
+  const notifications = await safeFindAll(["notification", "notifications"]);
+  const mapped = sortByDateDesc(notifications.map(mapNotification)).filter(
+    (notification) =>
+      includesSearch(notification, search, [
+        "title",
+        "message",
+        "creatorId",
+        "receiverId",
+      ])
+  );
+  const safePage = Math.max(1, Number(page) || 1);
+  const safeLimit = Math.max(1, Number(limit) || 20);
+  const totalNotifications = mapped.length;
+  const totalPages = Math.max(1, Math.ceil(totalNotifications / safeLimit));
+  const currentPage = Math.min(safePage, totalPages);
+  const start = (currentPage - 1) * safeLimit;
+
+  return {
+    notifications: mapped.slice(start, start + safeLimit),
+    pagination: {
+      page: currentPage,
+      limit: safeLimit,
+      total: totalNotifications,
+      totalNotifications,
+      totalPages,
+    },
+  };
+};
+
+export const createDatabaseNotification = async (body: AnyRecord) => {
+  const payload = getNotificationPayload(body);
+
+  if (!payload.title || !payload.message) {
+    throw getNotificationHttpError(
+      "Notification title and message are required.",
+      400
+    );
+  }
+
+  const data = {
+    title: payload.title,
+    message: payload.message,
+    creatorId: payload.creatorId,
+    receiverId: payload.receiverId,
+    redirect_link: payload.redirectLink || null,
+  };
+
+  try {
+    const delegate = getDelegate(["notification", "notifications"]);
+
+    if (delegate?.create) {
+      return mapNotification(
+        await delegate.create({
+          data,
+        })
+      );
+    }
+  } catch {
+  }
+
+  try {
+    const prisma = getPrisma();
+    const now = new Date();
+
+    if (!prisma?.$runCommandRaw) {
+      throw getNotificationHttpError(
+        "Notification database connection is unavailable.",
+        500
+      );
+    }
+
+    await prisma.$runCommandRaw({
+      insert: "notifications",
+      documents: [
+        {
+          ...data,
+          createdAt: { $date: now.toISOString() },
+          updatedAt: { $date: now.toISOString() },
+        },
+      ],
+    });
+
+    const notification = (await safeRawFindAll([
+      "notification",
+      "notifications",
+    ])).find(
+      (row: AnyRecord) =>
+        getText(row.title) === data.title &&
+        getText(row.message) === data.message &&
+        getText(row.receiverId) === data.receiverId
+    );
+
+    return mapNotification(notification ?? { ...data, createdAt: now });
+  } catch (error) {
+    throw error;
+  }
+};
+
+const defaultCustomization = {
+  categories: [
+    "Electronics",
+    "Fashion",
+    "Home & Kitchen",
+    "Sports & Fitness",
+  ],
+  subCategories: {
+    Electronics: ["Mobiles", "Laptops", "Accessories", "Gaming"],
+    Fashion: ["Men", "Women", "Kids", "Footwear"],
+    "Home & Kitchen": ["Furniture", "Appliances", "Decor"],
+    "Sports & Fitness": ["Gym Equipment", "Outdoor Sports", "Wearables"],
+  },
+  logoUrl: "",
+  bannerUrl: "",
+};
+
+const getStringArray = (value: unknown) =>
+  Array.isArray(value)
+    ? value
+        .map((item) => (typeof item === "string" ? item.trim() : ""))
+        .filter(Boolean)
+    : [];
+
+const mapCustomization = (config: AnyRecord = {}) => ({
+  id: getId(config),
+  categories: getStringArray(config.categories).length
+    ? getStringArray(config.categories)
+    : defaultCustomization.categories,
+  subCategories:
+    config.subCategories && typeof config.subCategories === "object"
+      ? config.subCategories
+      : defaultCustomization.subCategories,
+  logoUrl: getText(
+    config.logoUrl,
+    config.logo,
+    config.siteLogo,
+    config.profilePhoto,
+    config.profilePhotoUrl,
+    config.avatar,
+    config.avatarUrl
+  ),
+  bannerUrl: getText(
+    config.bannerUrl,
+    config.banner,
+    config.siteBanner,
+    config.coverPhoto,
+    config.coverPhotoUrl,
+    config.coverBanner,
+    config.coverBannerUrl
+  ),
+  updatedAt: config.updatedAt,
+});
+
+const normalizeCustomizationImage = (value: unknown) => {
+  const image = typeof value === "string" ? value.trim() : "";
+
+  if (!image) {
+    return "";
+  }
+
+  if (/^data:image\/[a-z0-9.+-]+;base64,/i.test(image)) {
+    return image;
+  }
+
+  if (/^https?:\/\//i.test(image) || image.startsWith("/")) {
+    return image;
+  }
+
+  throw getNotificationHttpError("Images must be uploaded from your PC.", 400);
+};
+
+const getCustomizationSubCategoryPayload = (
+  value: unknown,
+  fallbackCategory?: unknown,
+  fallbackSubCategory?: unknown
+) => {
+  const record =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as AnyRecord)
+      : {};
+
+  return {
+    category: getText(record.category, fallbackCategory),
+    subCategory: getText(
+      record.subCategory,
+      record.subcategory,
+      record.value,
+      fallbackSubCategory,
+      typeof value === "string" ? value : undefined
+    ),
+  };
+};
+
+const findCaseInsensitive = (items: string[], value: string) =>
+  items.find((item) => item.toLowerCase() === value.toLowerCase());
+
+const findSubCategoryGroupKey = (
+  subCategories: Record<string, string[]>,
+  category: string
+) =>
+  Object.keys(subCategories).find(
+    (key) => key.toLowerCase() === category.toLowerCase()
+  );
+
+const getCustomizationUpdate = (body: AnyRecord) => {
+  const update: AnyRecord = {};
+
+  if (body.categories !== undefined) {
+    update.categories = Array.from(
+      new Set(
+        getStringArray(body.categories).map((category) =>
+          category.trim()
+        )
+      )
+    );
+  }
+
+  if (body.category !== undefined) {
+    const category = getText(body.category);
+    if (!category) {
+      throw getNotificationHttpError("Category name is required.", 400);
+    }
+
+    update.addCategory = category;
+  }
+
+  if (body.deleteCategory !== undefined) {
+    const category = getText(body.deleteCategory);
+    if (!category) {
+      throw getNotificationHttpError("Category name is required.", 400);
+    }
+
+    update.deleteCategory = category;
+  }
+
+  if (
+    body.addSubCategory !== undefined ||
+    body.subCategory !== undefined ||
+    body.subcategory !== undefined
+  ) {
+    const payload = getCustomizationSubCategoryPayload(
+      body.addSubCategory,
+      body.subCategoryCategory,
+      body.subCategory ?? body.subcategory
+    );
+
+    if (!payload.category || !payload.subCategory) {
+      throw getNotificationHttpError(
+        "Category and sub category are required.",
+        400
+      );
+    }
+
+    update.addSubCategory = payload;
+  }
+
+  if (body.deleteSubCategory !== undefined) {
+    const payload = getCustomizationSubCategoryPayload(
+      body.deleteSubCategory,
+      body.deleteSubCategoryCategory,
+      body.deleteSubCategoryValue
+    );
+
+    if (!payload.category || !payload.subCategory) {
+      throw getNotificationHttpError(
+        "Category and sub category are required.",
+        400
+      );
+    }
+
+    update.deleteSubCategory = payload;
+  }
+
+  if (
+    body.logoUrl !== undefined ||
+    body.logo !== undefined ||
+    body.siteLogo !== undefined ||
+    body.profilePhoto !== undefined ||
+    body.profilePhotoUrl !== undefined ||
+    body.avatar !== undefined ||
+    body.avatarUrl !== undefined
+  ) {
+    update.logoUrl = normalizeCustomizationImage(
+      body.logoUrl ??
+        body.logo ??
+        body.siteLogo ??
+        body.profilePhoto ??
+        body.profilePhotoUrl ??
+        body.avatar ??
+        body.avatarUrl
+    );
+  }
+
+  if (
+    body.bannerUrl !== undefined ||
+    body.banner !== undefined ||
+    body.siteBanner !== undefined ||
+    body.coverPhoto !== undefined ||
+    body.coverPhotoUrl !== undefined ||
+    body.coverBanner !== undefined ||
+    body.coverBannerUrl !== undefined
+  ) {
+    update.bannerUrl = normalizeCustomizationImage(
+      body.bannerUrl ??
+        body.banner ??
+        body.siteBanner ??
+        body.coverPhoto ??
+        body.coverPhotoUrl ??
+        body.coverBanner ??
+        body.coverBannerUrl
+    );
+  }
+
+  return update;
+};
+
+export const getDatabaseCustomization = async () => {
+  const configs = await safeRawFindAll(["site_config", "siteConfig"]);
+  const mappedConfigs = configs.map(mapCustomization);
+
+  return (
+    mappedConfigs.find(
+      (customization) => customization.logoUrl || customization.bannerUrl
+    ) ??
+    mappedConfigs[0] ??
+    mapCustomization(defaultCustomization)
+  );
+};
+
+export const updateDatabaseCustomization = async (body: AnyRecord) => {
+  const prisma = getPrisma();
+
+  if (!prisma?.$runCommandRaw) {
+    throw getNotificationHttpError(
+      "Customization database connection is unavailable.",
+      500
+    );
+  }
+
+  const current = await getDatabaseCustomization();
+  const payload = getCustomizationUpdate(body);
+  let categories = current.categories;
+  const subCategories = Object.entries(current.subCategories || {}).reduce<
+    Record<string, string[]>
+  >((result, [category, values]) => {
+    result[category] = getStringArray(values);
+    return result;
+  }, {});
+
+  if (payload.categories) {
+    categories = payload.categories;
+  }
+
+  if (payload.addCategory) {
+    const existingCategory = findCaseInsensitive(
+      categories,
+      String(payload.addCategory)
+    );
+
+    if (!existingCategory) {
+      categories = [...categories, payload.addCategory];
+    }
+
+    subCategories[existingCategory || payload.addCategory] =
+      subCategories[existingCategory || payload.addCategory] || [];
+  }
+
+  if (payload.deleteCategory) {
+    const categoryToDelete = String(payload.deleteCategory);
+    const groupKey =
+      findSubCategoryGroupKey(subCategories, categoryToDelete) ||
+      categoryToDelete;
+
+    categories = categories.filter(
+      (category) =>
+        category.toLowerCase() !== categoryToDelete.toLowerCase()
+    );
+    delete subCategories[groupKey];
+  }
+
+  if (payload.addSubCategory) {
+    const { category, subCategory } = payload.addSubCategory;
+    const existingCategory =
+      findCaseInsensitive(categories, category) ||
+      findSubCategoryGroupKey(subCategories, category) ||
+      category;
+
+    if (!findCaseInsensitive(categories, existingCategory)) {
+      categories = [...categories, existingCategory];
+    }
+
+    const categoryKey =
+      findCaseInsensitive(categories, existingCategory) || existingCategory;
+    const existingGroupKey =
+      findSubCategoryGroupKey(subCategories, categoryKey) || categoryKey;
+    const currentSubCategories = getStringArray(
+      subCategories[existingGroupKey]
+    );
+
+    if (
+      !findCaseInsensitive(currentSubCategories, String(subCategory))
+    ) {
+      currentSubCategories.push(subCategory);
+    }
+
+    if (existingGroupKey !== categoryKey) {
+      delete subCategories[existingGroupKey];
+    }
+
+    subCategories[categoryKey] = currentSubCategories;
+  }
+
+  if (payload.deleteSubCategory) {
+    const { category, subCategory } = payload.deleteSubCategory;
+    const categoryKey =
+      findCaseInsensitive(categories, category) ||
+      findSubCategoryGroupKey(subCategories, category) ||
+      category;
+    const existingGroupKey =
+      findSubCategoryGroupKey(subCategories, categoryKey) || categoryKey;
+
+    if (subCategories[existingGroupKey]) {
+      subCategories[existingGroupKey] = getStringArray(
+        subCategories[existingGroupKey]
+      ).filter(
+        (item) => item.toLowerCase() !== String(subCategory).toLowerCase()
+      );
+    }
+  }
+
+  const now = new Date();
+  const update: AnyRecord = {
+    categories,
+    subCategories,
+    updatedAt: { $date: now.toISOString() },
+  };
+
+  if (payload.logoUrl !== undefined) {
+    update.logoUrl = payload.logoUrl;
+    update.profilePhotoUrl = payload.logoUrl;
+  } else if (current.logoUrl) {
+    update.logoUrl = current.logoUrl;
+    update.profilePhotoUrl = current.logoUrl;
+  }
+
+  if (payload.bannerUrl !== undefined) {
+    update.bannerUrl = payload.bannerUrl;
+    update.coverPhotoUrl = payload.bannerUrl;
+  } else if (current.bannerUrl) {
+    update.bannerUrl = current.bannerUrl;
+    update.coverPhotoUrl = current.bannerUrl;
+  }
+
+  await prisma.$runCommandRaw({
+    update: "site_config",
+    updates: [
+      {
+        q: {},
+        u: {
+          $set: update,
+          $setOnInsert: {
+            createdAt: { $date: now.toISOString() },
+          },
+        },
+        upsert: true,
+      },
+    ],
+  });
+
+  return getDatabaseCustomization();
+};
+
 const mapSeller = (
   seller: AnyRecord,
   users: AnyRecord[],
@@ -629,7 +1334,43 @@ const mapSeller = (
 
   return {
     id: getId(seller) || getId(shop ?? {}),
-    avatar: getImage(shopImage?.url, seller.avatar, seller.image, user?.avatar, shop?.avatar),
+    avatar: getOptionalImage(
+      shopImage?.url,
+      seller.avatar,
+      seller.avatarUrl,
+      seller.avatar_url,
+      seller.image,
+      seller.imageUrl,
+      seller.image_url,
+      seller.picture,
+      seller.photo,
+      seller.profileImage,
+      seller.profile_image,
+      seller.profilePicture,
+      seller.profile_picture,
+      seller.logo,
+      user?.avatar,
+      user?.avatarUrl,
+      user?.avatar_url,
+      user?.image,
+      user?.imageUrl,
+      user?.image_url,
+      user?.picture,
+      user?.photo,
+      user?.profileImage,
+      user?.profile_image,
+      user?.profilePicture,
+      user?.profile_picture,
+      shop?.avatar,
+      shop?.avatarUrl,
+      shop?.avatar_url,
+      shop?.image,
+      shop?.imageUrl,
+      shop?.image_url,
+      shop?.picture,
+      shop?.photo,
+      shop?.logo
+    ),
     name: getText(seller.name, user?.name, shop?.sellerName, "Unknown seller"),
     email: getText(seller.email, user?.email, shop?.email),
     shopName: getText(shop?.name, seller.shopName, seller.storeName, "Unknown"),
@@ -638,6 +1379,79 @@ const mapSeller = (
     country: getText(shop?.country, seller.country, user?.country, "Global"),
     joined: formatDate(seller.createdAt ?? shop?.createdAt ?? user?.createdAt),
     createdAt: seller.createdAt ?? shop?.createdAt ?? user?.createdAt,
+  };
+};
+
+export const normalizeAdminSeller = (seller: AnyRecord) => {
+  const rawShop = seller.shop ?? seller.shops ?? seller.store ?? seller.storefront;
+  const rawUser = seller.user ?? seller.users ?? seller.owner ?? seller.account;
+  const shop = rawShop && typeof rawShop === "object" ? rawShop : {};
+  const user = rawUser && typeof rawUser === "object" ? rawUser : {};
+  const id =
+    getId(seller) ||
+    getId(shop) ||
+    getId(user) ||
+    getIdValue(seller.sellerId ?? seller.seller_id ?? seller.shopId ?? seller.shop_id);
+  const shopId =
+    getId(shop) ||
+    getIdValue(seller.shopId ?? seller.shop_id ?? seller.storeId ?? seller.store_id) ||
+    id;
+  const createdAt = seller.createdAt ?? seller.created_at ?? shop.createdAt ?? user.createdAt;
+
+  return {
+    ...seller,
+    id,
+    shopId,
+    avatar: getOptionalImage(
+      seller.avatar,
+      seller.avatarUrl,
+      seller.avatar_url,
+      seller.image,
+      seller.imageUrl,
+      seller.image_url,
+      seller.picture,
+      seller.photo,
+      seller.profileImage,
+      seller.profile_image,
+      seller.profilePicture,
+      seller.profile_picture,
+      seller.logo,
+      shop.avatar,
+      shop.avatarUrl,
+      shop.avatar_url,
+      shop.image,
+      shop.imageUrl,
+      shop.image_url,
+      shop.picture,
+      shop.photo,
+      shop.logo,
+      user.avatar,
+      user.avatarUrl,
+      user.avatar_url,
+      user.image,
+      user.imageUrl,
+      user.image_url,
+      user.picture,
+      user.photo,
+      user.profileImage,
+      user.profile_image,
+      user.profilePicture,
+      user.profile_picture,
+      seller.images,
+      shop.images,
+      user.images
+    ),
+    name: getText(seller.name, user.name, user.fullName, user.username, shop.sellerName, "Unknown seller"),
+    email: getText(seller.email, user.email, shop.email),
+    shopName: getText(shop.name, seller.shopName, seller.shop_name, seller.storeName, seller.store_name, "Unknown"),
+    address: getText(shop.address, seller.address, user.address, "Not provided"),
+    country: getText(shop.country, seller.country, user.country, "Global"),
+    category: getText(shop.category, seller.category),
+    rating: getNumber(shop.ratings, shop.rating, seller.ratings, seller.rating),
+    phone: getText(seller.phone, seller.phoneNumber, seller.phone_number, user.phone, user.phoneNumber, user.phone_number),
+    joined: getText(seller.joined, seller.created) || formatDate(createdAt),
+    updated: getText(seller.updated) || formatDate(seller.updatedAt ?? seller.updated_at ?? shop.updatedAt ?? user.updatedAt),
+    createdAt,
   };
 };
 
@@ -752,7 +1566,7 @@ export const getDatabaseEvents = async (search = "", page = 1, limit = 10) => {
   const productEvents = products.filter(
     (product: AnyRecord) => product.starting_date || product.ending_date
   );
-  const sourceEvents = events.length > 0 ? events : productEvents;
+  const sourceEvents = uniqueRows([...events, ...productEvents]);
   const mapped = sortByDateDesc(
     sourceEvents.map((event: AnyRecord) =>
       mapEvent(event, shops, sellers, products, images)
@@ -847,12 +1661,12 @@ export const getDatabaseOrder = async (orderId: string) => {
 export const getDatabaseDashboard = async () => {
   const { products, events, users, sellers, shops, orders, images, addresses } =
     await loadBaseTables();
-  const eventRecords =
-    events.length > 0
-      ? events
-      : products.filter(
-          (product: AnyRecord) => product.starting_date || product.ending_date
-        );
+  const eventRecords = uniqueRows([
+    ...events,
+    ...products.filter(
+      (product: AnyRecord) => product.starting_date || product.ending_date
+    ),
+  ]);
   const mappedOrders = orders.map((order: AnyRecord) =>
     mapOrder(order, users, shops, sellers, addresses)
   );

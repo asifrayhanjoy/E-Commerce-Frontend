@@ -21,6 +21,7 @@ import {
   PRODUCT_DETAILS_PATH,
   saveSelectedProductDetails,
 } from "@/utils/productDetailsRoute";
+import { getShopAvatarImage } from "@/utils/shopImages";
 import Ratings from "../Ratings/page";
 
 const formatPrice = (value: number | string) => {
@@ -125,8 +126,7 @@ const ProductQuickView = ({
     typeof shop?.address === "string" ? shop.address.trim() : "";
   const shopIdValue = shop?.id || shop?._id;
   const shopRating = Number(shop?.ratings) || 0;
-  const shopAvatar = shop?.avatar?.find((image: { url?: string }) => image?.url)
-    ?.url;
+  const shopAvatar = getShopAvatarImage(shop);
   const hasShop = Boolean(shopName || shopIdValue);
   const isInStock = Number(product?.stock ?? 0) > 0;
 

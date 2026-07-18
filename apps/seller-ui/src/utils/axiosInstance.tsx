@@ -1,9 +1,28 @@
-import axios from "axios";
+import axios, { AxiosHeaders } from "axios";
+
+const configuredApiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || "").replace(
+  /\/api\/v1\/?$/,
+  ""
+);
+const apiBaseUrl =
+  typeof window === "undefined" ? configuredApiBaseUrl.replace(/\/$/, "") : "";
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: apiBaseUrl,
   withCredentials: true,
 });
+
+const authRefreshExcludedPaths = [
+  "/api/v1/auth/login-seller",
+  "/api/v1/auth/seller-register",
+  "/api/v1/auth/verify-seller",
+  "/api/v1/auth/create-shop",
+  "/api/v1/auth/create-stripe-link",
+  "/api/v1/auth/refresh-token",
+];
+
+const shouldSkipAuthRefresh = (url?: string) =>
+  Boolean(url && authRefreshExcludedPaths.some((path) => url.includes(path)));
 
 let isRefreshing = false;
 let refreshSubscribers: (() => void)[] = [];
@@ -28,13 +47,22 @@ const onRefreshSuccess = () => {
 
 // Handle API requests
 axiosInstance.interceptors.request.use(
-  (config) => config,
+  (config) => {
+    config.headers = AxiosHeaders.from(config.headers);
+    config.headers.set("x-auth-role", "seller");
+
+    return config;
+  },
   (error) => Promise.reject(error)
 );
 
 // Handle expired tokens and refresh logic
 axiosInstance.interceptors.response.use((response) => response, async (error) => {
     const originalRequest = error.config;
+
+    if (!originalRequest || shouldSkipAuthRefresh(originalRequest.url)) {
+      return Promise.reject(error);
+    }
 
     // prevent infinite retry loop
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -51,10 +79,13 @@ axiosInstance.interceptors.response.use((response) => response, async (error) =>
 
       try {
         await axios.post(
-          "http://localhost:8080/api/v1/auth/refresh-token",
+          `${apiBaseUrl}/api/v1/auth/refresh-token`,
           { role: "seller" },
           {
             withCredentials: true,
+            headers: {
+              "x-auth-role": "seller",
+            },
           }
         );
 

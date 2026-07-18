@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { getDatabaseSellers } from "../_lib/admin-data";
+import { getDatabaseSellers, normalizeAdminSeller } from "../_lib/admin-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,7 +54,15 @@ export async function GET(request: NextRequest) {
   try {
     const backendResult = await getBackendSellers(query);
     if (backendResult) {
-      return NextResponse.json({ success: true, ...backendResult });
+      const sellers = (backendResult.sellers ?? []).map(normalizeAdminSeller);
+
+      return NextResponse.json({
+        success: true,
+        ...backendResult,
+        sellers,
+        pagination:
+          backendResult.pagination ?? pagination(page, limit, sellers.length),
+      });
     }
   } catch {
   }

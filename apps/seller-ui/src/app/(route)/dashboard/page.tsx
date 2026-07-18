@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -83,7 +82,7 @@ const fetchProducts = async () => {
 };
 
 const fetchSellerOrders = async () => {
-  const response = await axios.get("/api/order/get-Seller-Orders", {
+  const response = await axiosInstance.get("/api/order/get-Seller-Orders", {
     withCredentials: true,
   });
 

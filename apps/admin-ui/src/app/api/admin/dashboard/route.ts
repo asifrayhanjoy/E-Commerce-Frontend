@@ -53,6 +53,9 @@ const hasDashboardRows = (data: any) =>
       data?.recentOrders?.length
   );
 
+const isDashboardPayload = (data: any) =>
+  Boolean(data?.stats && Array.isArray(data?.revenue));
+
 const getBackendDashboard = async () => {
   for (const base of backendBases) {
     for (const path of ["/admin/dashboard", "/auth/admin/dashboard"]) {
@@ -62,7 +65,7 @@ const getBackendDashboard = async () => {
 
         const data = await response.json();
         const dashboard = data?.data ?? data?.dashboard ?? data;
-        if (hasDashboardRows(dashboard)) return dashboard;
+        if (isDashboardPayload(dashboard)) return dashboard;
       } catch {
         continue;
       }

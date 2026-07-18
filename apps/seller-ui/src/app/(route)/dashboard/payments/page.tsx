@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import Link from "next/link";
 import { ChevronRight, Eye, Search } from "lucide-react";
+import axiosInstance from "@/utils/axiosInstance";
 
 type PaymentBuyer = {
   id?: string;
@@ -29,7 +29,7 @@ type SellerPayment = {
 };
 
 const fetchSellerPayments = async () => {
-  const response = await axios.get("/api/order/get-Seller-Payments", {
+  const response = await axiosInstance.get("/api/order/get-Seller-Payments", {
     withCredentials: true,
   });
 

@@ -19,6 +19,7 @@ const proxyOrderRequest = async (
   const contentType = request.headers.get("content-type");
   const cookie = request.headers.get("cookie");
   const authorization = request.headers.get("authorization");
+  const authRole = request.headers.get("x-auth-role");
 
   if (contentType) {
     headers.set("content-type", contentType);
@@ -30,6 +31,10 @@ const proxyOrderRequest = async (
 
   if (authorization) {
     headers.set("authorization", authorization);
+  }
+
+  if (authRole) {
+    headers.set("x-auth-role", authRole);
   }
 
   try {

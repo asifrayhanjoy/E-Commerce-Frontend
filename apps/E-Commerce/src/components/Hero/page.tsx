@@ -1,12 +1,27 @@
 "use client";
 
 import { MoveRight } from "lucide-react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  emptySiteCustomization,
+  fetchSiteCustomization,
+} from "@/utils/siteCustomization";
 
 const Hero = () => {
   const router = useRouter();
+  const [bannerImageFailed, setBannerImageFailed] = useState(false);
+  const { data: siteCustomization = emptySiteCustomization } = useQuery({
+    queryKey: ["site-customization", "admin-images-v3"],
+    queryFn: fetchSiteCustomization,
+    staleTime: 0,
+  });
+  const bannerUrl = siteCustomization.bannerUrl;
+
+  useEffect(() => {
+    setBannerImageFailed(false);
+  }, [bannerUrl]);
 
   return (
     <div className="bg-[#115061] h-[85vh] min-h-[560px] flex items-center">
@@ -45,14 +60,16 @@ const Hero = () => {
         </div>
 
         <div className="w-full flex justify-center md:justify-end">
-          <Image
-            src="/Main.png"
-            alt="Samsung phone collection"
-            width={600}
-            height={600}
-            priority
-            className="w-full max-w-[480px] xl:max-w-[550px] h-auto object-contain"
-          />
+          {bannerUrl && !bannerImageFailed ? (
+            <img
+              src={bannerUrl}
+              alt="Store cover"
+              className="w-full max-w-[480px] xl:max-w-[550px] h-auto max-h-[440px] object-contain"
+              onError={() => setBannerImageFailed(true)}
+            />
+          ) : (
+            <div className="hidden md:block w-full max-w-[480px] xl:max-w-[550px]" />
+          )}
         </div>
       </div>
     </div>

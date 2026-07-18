@@ -56,6 +56,24 @@ import toast from "react-hot-toast";
     );
   };
 
+  const normalizeSlugValue = (value?: string) =>
+    (value || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+  const getUniqueRetrySlug = (slug: string, title: string) => {
+    const baseSlug = normalizeSlugValue(slug) || normalizeSlugValue(title) || "product";
+
+    return `${baseSlug}-${Date.now()}`;
+  };
+
+  const isDuplicateSlugError = (error: any) =>
+    String(error?.response?.data?.message || "")
+      .toLowerCase()
+      .includes("slug already");
+
   type Category = string | {
     _id?: string;
     id?: string;
@@ -389,7 +407,18 @@ import toast from "react-hot-toast";
       short_description: data.shortDescription,
     };
 
-    await axiosInstance.post("/api/v1/products/create-product", payload);
+    try {
+      await axiosInstance.post("/api/v1/products/create-product", payload);
+    } catch (error: any) {
+      if (!isDuplicateSlugError(error)) {
+        throw error;
+      }
+
+      await axiosInstance.post("/api/v1/products/create-product", {
+        ...payload,
+        slug: getUniqueRetrySlug(data.slug, data.title),
+      });
+    }
 
     router.push("/dashboard/all-products");
   } catch (error: any) {

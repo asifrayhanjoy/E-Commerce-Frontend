@@ -14,7 +14,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import ProductCard from "@/components/ProductCard/page";
 import Ratings from "@/components/Ratings/page";
 import { useCart } from "@/contexts/CartContext";
@@ -115,6 +115,7 @@ export default function ProductDetailsPage() {
   const [activeImage, setActiveImage] = useState("");
   const [isZooming, setIsZooming] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+  const [chatError, setChatError] = useState("");
 
   useEffect(() => {
     setSelectedReference(loadSelectedProductDetails());
@@ -196,6 +197,28 @@ export default function ProductDetailsPage() {
     setActiveImage(productImages[0] || fallbackImage);
   }, [productImages]);
 
+  const chatShop = product?.Shop || product?.shop;
+  const chatProductId = product?.id || product?._id;
+
+  const startChatMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axiosInstance.post("/api/v1/chats/conversations", {
+        productId: chatProductId,
+      });
+
+      return response.data.conversation;
+    },
+    onSuccess: (conversation) => {
+      setChatError("");
+      router.push(`/inbox?conversationId=${conversation.id}`);
+    },
+    onError: (error: any) => {
+      setChatError(
+        error?.response?.data?.message || "Unable to start this conversation."
+      );
+    },
+  });
+
   if (!referenceReady || isProductLoading) {
     return (
       <main className="bg-[#f6f7fb] py-8">
@@ -229,7 +252,7 @@ export default function ProductDetailsPage() {
 
   const productTitle = product?.title || "Untitled product";
   const productReviews = getProductReviews(product);
-  const shop = product?.Shop || product?.shop;
+  const shop = chatShop;
   const shopName = typeof shop?.name === "string" ? shop.name.trim() : "";
   const shopAddress =
     typeof shop?.address === "string" ? shop.address.trim() : "";
@@ -271,6 +294,24 @@ export default function ProductDetailsPage() {
     }
 
     toggleWishlist(product);
+  };
+
+  const handleChatNow = () => {
+    if (isUserLoading) {
+      return;
+    }
+
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+
+    if (!chatProductId) {
+      setChatError("Seller information is missing for this product.");
+      return;
+    }
+
+    startChatMutation.mutate();
   };
 
   const handleImageMouseMove = (event: MouseEvent<HTMLDivElement>) => {
@@ -456,9 +497,11 @@ export default function ProductDetailsPage() {
                 <button
                   type="button"
                   className="inline-flex h-10 shrink-0 items-center gap-2 rounded-md border border-blue-100 bg-blue-50 px-3 text-sm font-black text-blue-600 transition hover:bg-blue-100"
+                  onClick={handleChatNow}
+                  disabled={startChatMutation.isPending}
                 >
                   <MessageSquare size={17} />
-                  Chat Now
+                  {startChatMutation.isPending ? "Opening..." : "Chat Now"}
                 </button>
               )}
               <button
@@ -474,6 +517,12 @@ export default function ProductDetailsPage() {
             </div>
 
             <div className="mt-5 space-y-6 text-slate-500">
+              {chatError && (
+                <p className="rounded-md bg-red-50 px-4 py-3 text-sm font-bold text-red-600">
+                  {chatError}
+                </p>
+              )}
+
               {shopAddress && (
                 <section className="rounded-md border border-slate-100 bg-slate-50/60 p-4">
                   <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">

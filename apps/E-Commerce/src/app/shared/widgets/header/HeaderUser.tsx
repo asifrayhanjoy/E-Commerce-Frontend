@@ -1,18 +1,55 @@
 "use client";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import ProfileIcon from "../../../assete/svgs/profile.icon";
 import HeartIcon from "../../../assete/svgs/heard.icon";
 import CartIcon from "../../../assete/svgs/card.icon";
+import { MessageCircle } from "lucide-react";
 import useUser from "@/hooks/use.User";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
+import { getImageUrl } from "@/utils/shopImages";
+import {
+  emptySiteCustomization,
+  fetchSiteCustomization,
+} from "@/utils/siteCustomization";
+
+const getUserAvatarUrl = (user: any) =>
+  getImageUrl(
+    user?.avatar,
+    user?.avatarUrl,
+    user?.profilePhoto,
+    user?.profilePhotoUrl,
+    user?.profileImage,
+    user?.profileImageUrl,
+    user?.image,
+    user?.imageUrl,
+    user?.picture,
+    user?.photo
+  );
 
 export default function HeaderUser() {
   const { cartCount } = useCart();
   const { wishlistCount } = useWishlist();
   const { user, isLoading } = useUser();
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState("");
+  const { data: siteCustomization = emptySiteCustomization } = useQuery({
+    queryKey: ["site-customization", "admin-images-v3"],
+    queryFn: fetchSiteCustomization,
+    staleTime: 0,
+  });
+  const accountAvatarUrl = getUserAvatarUrl(user);
+  const userAvatarUrl =
+    [accountAvatarUrl, siteCustomization.logoUrl].find(
+      (url) => url && url !== failedAvatarUrl
+    ) || "";
   const displayCartCount = user ? cartCount : 0;
   const displayWishlistCount = user ? wishlistCount : 0;
+
+  useEffect(() => {
+    setFailedAvatarUrl("");
+  }, [accountAvatarUrl, siteCustomization.logoUrl]);
 
   return (
     <>
@@ -21,7 +58,16 @@ export default function HeaderUser() {
         {!isLoading && user ? (
           <>
             <Link href="/profile" className="border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full">
-              <ProfileIcon size={24} color="#333" />
+              {userAvatarUrl ? (
+                <img
+                  src={userAvatarUrl}
+                  alt={user?.name || "Profile"}
+                  className="h-full w-full rounded-full object-cover"
+                  onError={() => setFailedAvatarUrl(userAvatarUrl)}
+                />
+              ) : (
+                <ProfileIcon size={24} color="#333" />
+              )}
             </Link>
             <Link href="/profile" className="leading-tight">
               <span className="block text-sm font-medium text-gray-500">
@@ -57,6 +103,12 @@ export default function HeaderUser() {
       </div>
 
       <div className="flex items-center gap-5">
+        {user && (
+          <Link href="/inbox" className="relative">
+            <MessageCircle size={27} color="#555" strokeWidth={2.4} />
+          </Link>
+        )}
+
         {/* Wishlist */}
         <Link href="/wishlist" className="relative">
           <HeartIcon size={26} color="#555" />

@@ -7,7 +7,8 @@ import { useForm } from "react-hook-form";
 import { Eye, EyeOff } from "lucide-react";
 import axios, { AxiosError } from "axios";
 import GoogleButton from "@/components/auth/GoogleButton";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/useAuthStor";
 
 type FormData = {
   email: string;
@@ -19,6 +20,8 @@ const Login = () => {
   const [serverError, setServerError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { setLoggedIn } = useAuthStore();
   const { register, handleSubmit, formState: { errors }, } = useForm<FormData>();
 
   const loginMutation = useMutation({
@@ -27,8 +30,10 @@ const Login = () => {
       { withCredentials: true } );
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       setServerError(null);
+      setLoggedIn(true);
+      queryClient.invalidateQueries({ queryKey: ["user"] });
       router.push("/");
     },
     onError: (error: AxiosError) => {

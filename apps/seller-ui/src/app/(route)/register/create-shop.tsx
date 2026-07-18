@@ -55,7 +55,7 @@ const CreateShop = ({
     setServerError(null);
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/create-shop", {
+      const res = await fetch("/api/v1/auth/create-shop", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

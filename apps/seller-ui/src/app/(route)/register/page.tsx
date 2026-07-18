@@ -1,6 +1,5 @@
 "use client";
 
-import axios from "axios";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -8,6 +7,7 @@ import { Eye, EyeOff, } from "lucide-react";
 import { countries } from "../../../utils/countries";
 import CreateShop from "./create-shop";
 import StripeLogo from "@/utils/StripeLogo";
+import axiosInstance from "@/utils/axiosInstance";
 
 type FormData = {
   name: string;
@@ -54,7 +54,7 @@ const Register = () => {
   // Step 1 — Submit registration form → send OTP to email
   const onSubmit = async (data: FormData) => { setServerError(null); setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/seller-register", {
+      const res = await fetch("/api/v1/auth/seller-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -100,7 +100,7 @@ const Register = () => {
     if (!canResend || !SellerData) return;
     setServerError(null);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/seller-register", {
+      const res = await fetch("/api/v1/auth/seller-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -134,7 +134,7 @@ const Register = () => {
     setServerError(null);
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/verify-seller", {
+      const res = await fetch("/api/v1/auth/verify-seller", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -165,8 +165,8 @@ const Register = () => {
   const connectStripe = async () => {
     if (!sellerId) return;
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_SERVER_URI}/api/v1/auth/create-stripe-link`,
+      const response = await axiosInstance.post(
+        "/api/v1/auth/create-stripe-link",
         { sellerId }
       );
       if (response.data.url) {

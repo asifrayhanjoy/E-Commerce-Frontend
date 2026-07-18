@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import axios from "axios";
 import Link from "next/link";
 import { ChevronRight, Eye, Search } from "lucide-react";
+import axiosInstance from "@/utils/axiosInstance";
 
 type OrderUser = {
   id?: string;
@@ -45,7 +45,7 @@ type SellerOrder = {
 };
 
 const fetchSellerOrders = async () => {
-  const response = await axios.get("/api/order/get-Seller-Orders", {
+  const response = await axiosInstance.get("/api/order/get-Seller-Orders", {
     withCredentials: true,
   });
 

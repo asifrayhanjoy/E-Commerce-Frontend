@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff } from "lucide-react";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { useMutation } from "@tanstack/react-query";
+import axiosInstance from "@/utils/axiosInstance";
 
 type FormData = {
   email: string;
@@ -21,7 +22,7 @@ const Login = () => {
 
   const loginMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await axios.post( "http://localhost:8080/api/v1/auth/login-seller", data,
+      const response = await axiosInstance.post( "/api/v1/auth/login-seller", data,
       { withCredentials: true } );
       return response.data;
     },
