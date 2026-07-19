@@ -1,4 +1,6 @@
-type CustomAxiosRequestConfig = {
+import type { AxiosRequestConfig } from "axios";
+
+type CustomAxiosRequestConfig = AxiosRequestConfig & {
   requireAuth: boolean;
 };
 

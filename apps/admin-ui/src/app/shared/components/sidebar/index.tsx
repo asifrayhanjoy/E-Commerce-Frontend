@@ -161,7 +161,15 @@ const MenuSection = ({
 const SidebarMenu = () => {
   const router = useRouter();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch {
+    }
+
     window.localStorage.removeItem("admin");
     router.push("/");
   };

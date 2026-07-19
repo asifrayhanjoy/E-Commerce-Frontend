@@ -6,7 +6,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Send } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 
 type ChatRole = "user" | "seller";
 
@@ -138,7 +138,13 @@ const fetchMessages = async (conversationId: string) => {
     : [];
 };
 
-export default function CustomerInboxPage() {
+const InboxFallback = () => (
+  <main className="min-h-[75vh] bg-[#f6f7fb] px-4 py-8">
+    <section className="mx-auto h-[720px] max-w-7xl rounded-md bg-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]" />
+  </main>
+);
+
+function CustomerInboxContent() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { user, isLoading: isUserLoading } = useUser();
@@ -502,5 +508,13 @@ export default function CustomerInboxPage() {
         </section>
       </section>
     </main>
+  );
+}
+
+export default function CustomerInboxPage() {
+  return (
+    <Suspense fallback={<InboxFallback />}>
+      <CustomerInboxContent />
+    </Suspense>
   );
 }

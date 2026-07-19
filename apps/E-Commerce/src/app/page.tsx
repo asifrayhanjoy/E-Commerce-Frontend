@@ -2,6 +2,7 @@
 
 import Hero from "@/components/Hero/page";
 import ProductCard from "@/components/ProductCard/page";
+import RecommendedProducts from "@/components/RecommendedProducts";
 import SectionTitle from "@/components/SectionTitle/page";
 import axiosInstance from "@/utils/axiosinstance";
 import {
@@ -449,6 +450,8 @@ export default function Index() {
           isLoading={isLoading}
           isError={isError}
         />
+
+        <RecommendedProducts />
 
         <TopShopsSection
           shops={data.topShops}

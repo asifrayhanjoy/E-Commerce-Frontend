@@ -59,6 +59,32 @@ export const getImageUrl = (...values: unknown[]) => {
   return "";
 };
 
+const getImageUrlsFromValue = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.flatMap(getImageUrlsFromValue).filter(Boolean);
+  }
+
+  const url = getImageUrlFromValue(value);
+
+  return url ? [url] : [];
+};
+
+const getUniqueImageUrls = (...values: unknown[]) => {
+  const seen = new Set<string>();
+  const images: string[] = [];
+
+  values.flatMap(getImageUrlsFromValue).forEach((image) => {
+    if (seen.has(image)) {
+      return;
+    }
+
+    seen.add(image);
+    images.push(image);
+  });
+
+  return images;
+};
+
 export const getShopAvatarImage = (shop?: any) =>
   getImageUrl(
     shop?.avatarUrl,
@@ -89,3 +115,9 @@ export const getShopCoverImage = (shop?: any) =>
     shop?.storefront?.cover?.images,
     shop?.products?.find((product: any) => product?.images?.[0]?.url)?.images
   );
+
+export const getShopGalleryImages = (shop?: any) =>
+  getUniqueImageUrls(
+    shop?.galleryImages,
+    shop?.storefront?.galleryImages
+  ).slice(0, 3);

@@ -217,16 +217,16 @@ const getBackendCustomization = async () => {
 
 const getDatabaseCustomization = async () => {
   const prisma = getPrisma();
-  const result = await prisma.$runCommandRaw({
+  const result = (await prisma.$runCommandRaw({
     find: "site_config",
     sort: {
       updatedAt: -1,
       createdAt: -1,
     },
     batchSize: 50,
-  });
-  const configs = result?.cursor?.firstBatch ?? [];
-  const mappedConfigs = configs.map(mapCustomization);
+  })) as AnyRecord;
+  const configs = (result?.cursor?.firstBatch ?? []) as AnyRecord[];
+  const mappedConfigs = configs.map((config) => mapCustomization(config));
 
   return (
     mappedConfigs.find(

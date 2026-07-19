@@ -207,7 +207,7 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
         )}
 
         <Link
-          href={shopId ? `/shops/${encodeURIComponent(shopId)}` : "/shops"}
+          href={shopId ? `/shop/${encodeURIComponent(shopId)}` : "/shops"}
           className="mt-8 inline-flex items-center gap-2 text-lg font-bold text-slate-700 underline underline-offset-4 transition hover:text-blue-700"
         >
           Visit Shop

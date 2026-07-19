@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { ChangeEvent, useState } from "react";
 import { useForm } from "react-hook-form";
 
 const shopCategories = [
@@ -35,6 +35,44 @@ type ShopFormData = {
   category: string;
 };
 
+type ImageUploadState = {
+  fileData: string;
+  fileName: string;
+};
+
+const MAX_SHOP_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+
+const createImageUpload = (): ImageUploadState => ({
+  fileData: "",
+  fileName: "",
+});
+
+const readShopImageFile = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    if (!file.type.startsWith("image/")) {
+      reject(new Error("Please choose a valid image file."));
+      return;
+    }
+
+    if (file.size > MAX_SHOP_IMAGE_SIZE_BYTES) {
+      reject(new Error("Image must be 5MB or smaller."));
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+
+      reject(new Error("Image file could not be read."));
+    };
+    reader.onerror = () => reject(new Error("Image file could not be read."));
+    reader.readAsDataURL(file);
+  });
+
 const CreateShop = ({
   sellerId,
   setActiveStep,
@@ -44,12 +82,76 @@ const CreateShop = ({
 }) => {
   const [serverError, setServerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [profileImage, setProfileImage] = useState<ImageUploadState>(
+    createImageUpload
+  );
+  const [coverImage, setCoverImage] = useState<ImageUploadState>(
+    createImageUpload
+  );
+  const [galleryImages, setGalleryImages] = useState<ImageUploadState[]>([
+    createImageUpload(),
+    createImageUpload(),
+    createImageUpload(),
+  ]);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ShopFormData>();
+
+  const handleSingleImageChange = async (
+    event: ChangeEvent<HTMLInputElement>,
+    setter: React.Dispatch<React.SetStateAction<ImageUploadState>>
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const image = await readShopImageFile(file);
+      setter({
+        fileData: image,
+        fileName: file.name,
+      });
+      setServerError(null);
+    } catch (err: unknown) {
+      event.target.value = "";
+      setServerError(err instanceof Error ? err.message : "Image could not be selected.");
+    }
+  };
+
+  const handleGalleryImageChange = async (
+    index: number,
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const image = await readShopImageFile(file);
+      setGalleryImages((currentImages) =>
+        currentImages.map((currentImage, imageIndex) =>
+          imageIndex === index
+            ? {
+                ...currentImage,
+                fileData: image,
+                fileName: file.name,
+              }
+            : currentImage
+        )
+      );
+      setServerError(null);
+    } catch (err: unknown) {
+      event.target.value = "";
+      setServerError(err instanceof Error ? err.message : "Gallery image could not be selected.");
+    }
+  };
 
   const onSubmit = async (data: ShopFormData) => {
     setServerError(null);
@@ -67,6 +169,11 @@ const CreateShop = ({
           website: data.website,
           category: data.category,
           sellerId,
+          profileImage: profileImage.fileData || undefined,
+          coverImage: coverImage.fileData || undefined,
+          galleryImages: galleryImages
+            .map((image) => image.fileData)
+            .filter(Boolean),
         }),
       });
       const result = await res.json();
@@ -171,6 +278,105 @@ const CreateShop = ({
         {errors.category && (
           <p className="text-red-500 text-sm mb-2">{String(errors.category.message)}</p>
         )}
+
+        <div className="mt-4 grid gap-4">
+          <div>
+            <label className="block text-gray-700 mb-1">Shop Profile Photo</label>
+            <div className="flex items-center gap-4 rounded-lg border border-blue-100 bg-blue-50 p-3">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full border border-blue-200 bg-white text-2xl font-semibold text-blue-500">
+                {profileImage.fileData ? (
+                  <img
+                    src={profileImage.fileData}
+                    alt="Shop profile preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  "S"
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-black file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+                  onChange={(event) =>
+                    handleSingleImageChange(event, setProfileImage)
+                  }
+                />
+                {profileImage.fileName && (
+                  <p className="mt-2 truncate text-xs text-gray-500">
+                    {profileImage.fileName}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-gray-700 mb-1">Shop Cover Photo</label>
+            <div className="rounded-lg border border-blue-100 bg-blue-50 p-3">
+              <div className="mb-3 flex h-28 items-center justify-center overflow-hidden rounded-md border border-blue-200 bg-white text-sm font-semibold text-blue-500">
+                {coverImage.fileData ? (
+                  <img
+                    src={coverImage.fileData}
+                    alt="Shop cover preview"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  "Cover preview"
+                )}
+              </div>
+              <input
+                type="file"
+                accept="image/*"
+                className="w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-black file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white"
+                onChange={(event) => handleSingleImageChange(event, setCoverImage)}
+              />
+              {coverImage.fileName && (
+                <p className="mt-2 truncate text-xs text-gray-500">
+                  {coverImage.fileName}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-gray-700 mb-1">
+              Shop Gallery Images (up to 3)
+            </label>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {galleryImages.map((image, index) => (
+                <div
+                  key={index}
+                  className="rounded-lg border border-blue-100 bg-blue-50 p-3"
+                >
+                  <div className="mb-3 flex h-24 items-center justify-center overflow-hidden rounded-md border border-blue-200 bg-white text-sm font-semibold text-blue-500">
+                    {image.fileData ? (
+                      <img
+                        src={image.fileData}
+                        alt={`Shop gallery preview ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      `Image ${index + 1}`
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full text-xs text-gray-700 file:mb-2 file:rounded-md file:border-0 file:bg-black file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white"
+                    onChange={(event) => handleGalleryImageChange(index, event)}
+                  />
+                  {image.fileName && (
+                    <p className="truncate text-xs text-gray-500">
+                      {image.fileName}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         <button
           type="submit"
