@@ -129,7 +129,7 @@ const SellerIdentity = () => {
 
 const SidebarBarWrapper = ({ children }: { children?: ReactNode }) => {
   return (
-    <div className="flex min-h-screen flex-col bg-black text-white">
+    <div className="flex min-h-full flex-col bg-black text-white">
       <div className="px-1 pt-1">
         <SellerIdentity />
       </div>

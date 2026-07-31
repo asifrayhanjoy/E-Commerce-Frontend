@@ -336,14 +336,14 @@ function CustomerInboxContent() {
   }
 
   return (
-    <main className="min-h-[75vh] bg-[#f6f7fb] px-4 py-8">
-      <section className="mx-auto grid h-[720px] max-w-7xl grid-cols-[360px_1fr] overflow-hidden rounded-md bg-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]">
-        <aside className="border-r border-slate-100 bg-slate-50">
-          <div className="border-b border-slate-100 px-5 py-5">
+    <main className="min-h-[75vh] overflow-hidden bg-[#f6f7fb] px-4 py-8">
+      <section className="mx-auto grid h-[720px] min-h-0 max-w-7xl grid-cols-[360px_1fr] overflow-hidden rounded-md bg-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]">
+        <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-slate-50">
+          <div className="shrink-0 border-b border-slate-100 px-5 py-5">
             <h1 className="text-2xl font-black text-slate-950">Inbox</h1>
           </div>
 
-          <div className="h-[648px] overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {isConversationLoading && (
               <p className="px-5 py-6 text-sm font-semibold text-slate-500">
                 Loading conversations...
@@ -418,10 +418,10 @@ function CustomerInboxContent() {
           </div>
         </aside>
 
-        <section className="flex min-w-0 flex-col">
+        <section className="flex min-h-0 min-w-0 flex-col">
           {selectedConversation ? (
             <>
-              <div className="border-b border-slate-100 px-6 py-5">
+              <div className="shrink-0 border-b border-slate-100 px-6 py-5">
                 <h2 className="text-lg font-black text-slate-950">
                   {getConversationTitle(selectedConversation)}
                 </h2>
@@ -430,7 +430,7 @@ function CustomerInboxContent() {
                 </p>
               </div>
 
-              <div className="flex-1 overflow-y-auto bg-[#f8fafc] px-6 py-5">
+              <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8fafc] px-6 py-5">
                 {isMessageLoading && (
                   <p className="text-sm font-semibold text-slate-500">
                     Loading messages...
@@ -475,7 +475,7 @@ function CustomerInboxContent() {
               </div>
 
               <form
-                className="border-t border-slate-100 bg-white px-5 py-4"
+                className="shrink-0 border-t border-slate-100 bg-white px-5 py-4"
                 onSubmit={handleSendMessage}
               >
                 {sendError && (

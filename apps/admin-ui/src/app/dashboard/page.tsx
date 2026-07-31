@@ -546,8 +546,8 @@ const DashboardPage = () => {
             </div>
 
             <div className="absolute bottom-0 left-0 grid w-full grid-cols-7 px-2 text-[13px] font-semibold text-[#71798c]">
-              {revenue.map((item) => (
-                <span key={item.month}>{item.month}</span>
+              {revenue.map((item, index) => (
+                <span key={`${item.month}-${index}`}>{item.month}</span>
               ))}
             </div>
           </div>

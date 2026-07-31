@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import ProfileIcon from "../../../assete/svgs/profile.icon";
 import HeartIcon from "../../../assete/svgs/heard.icon";
 import CartIcon from "../../../assete/svgs/card.icon";
-import { MessageCircle } from "lucide-react";
 import useUser from "@/hooks/use.User";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
@@ -103,12 +102,6 @@ export default function HeaderUser() {
       </div>
 
       <div className="flex items-center gap-5">
-        {user && (
-          <Link href="/inbox" className="relative">
-            <MessageCircle size={27} color="#555" strokeWidth={2.4} />
-          </Link>
-        )}
-
         {/* Wishlist */}
         <Link href="/wishlist" className="relative">
           <HeartIcon size={26} color="#555" />

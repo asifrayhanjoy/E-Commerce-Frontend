@@ -313,17 +313,17 @@ export default function SellerInboxPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#05070d] p-6 text-white">
-      <section className="grid h-[calc(100vh-48px)] min-h-[680px] overflow-hidden rounded-md border border-[#111827] bg-[#070b13] shadow-[0_20px_60px_-36px_rgba(0,0,0,0.8)] lg:grid-cols-[360px_1fr]">
-        <aside className="border-r border-[#111827] bg-[#080d17]">
-          <div className="border-b border-[#111827] px-5 py-5">
+    <main className="h-full overflow-hidden bg-[#05070d] p-6 text-white">
+      <section className="grid h-full min-h-0 overflow-hidden rounded-md border border-[#111827] bg-[#070b13] shadow-[0_20px_60px_-36px_rgba(0,0,0,0.8)] lg:grid-cols-[360px_1fr]">
+        <aside className="flex min-h-0 flex-col border-r border-[#111827] bg-[#080d17]">
+          <div className="shrink-0 border-b border-[#111827] px-5 py-5">
             <h1 className="text-2xl font-black">Inbox</h1>
             <p className="mt-1 text-sm font-semibold text-[#8c93a1]">
               Customer conversations
             </p>
           </div>
 
-          <div className="h-[calc(100%-82px)] overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             {isConversationLoading && (
               <p className="px-5 py-6 text-sm font-semibold text-[#8c93a1]">
                 Loading conversations...
@@ -398,10 +398,10 @@ export default function SellerInboxPage() {
           </div>
         </aside>
 
-        <section className="flex min-w-0 flex-col">
+        <section className="flex min-h-0 min-w-0 flex-col">
           {selectedConversation ? (
             <>
-              <div className="border-b border-[#111827] px-6 py-5">
+              <div className="shrink-0 border-b border-[#111827] px-6 py-5">
                 <h2 className="text-lg font-black text-white">
                   {getConversationTitle(selectedConversation)}
                 </h2>
@@ -410,7 +410,7 @@ export default function SellerInboxPage() {
                 </p>
               </div>
 
-              <div className="flex-1 overflow-y-auto bg-[#05070d] px-6 py-5">
+              <div className="min-h-0 flex-1 overflow-y-auto bg-[#05070d] px-6 py-5">
                 {isMessageLoading && (
                   <p className="text-sm font-semibold text-[#9ca3af]">
                     Loading messages...
@@ -455,7 +455,7 @@ export default function SellerInboxPage() {
               </div>
 
               <form
-                className="border-t border-[#111827] bg-[#080d17] px-5 py-4"
+                className="shrink-0 border-t border-[#111827] bg-[#080d17] px-5 py-4"
                 onSubmit={handleSendMessage}
               >
                 {sendError && (

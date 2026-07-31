@@ -452,14 +452,14 @@ function Dashboard() {
           </div>
 
           <div className="grid h-[220px] grid-cols-6 items-end gap-3 border-b border-gray-800 pb-4">
-            {dashboardData.monthlyRevenue.map((item) => {
+            {dashboardData.monthlyRevenue.map((item, index) => {
               const height = Math.max(
                 item.total === 0 ? 6 : 18,
                 (item.total / dashboardData.maxMonthlyRevenue) * 100
               );
 
               return (
-                <div key={item.key} className="flex h-full flex-col justify-end gap-3">
+                <div key={`${item.key}-${index}`} className="flex h-full flex-col justify-end gap-3">
                   <div className="flex flex-1 items-end">
                     <div
                       className="w-full rounded-t-md bg-blue-600 transition"

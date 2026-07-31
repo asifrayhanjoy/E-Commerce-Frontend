@@ -3,12 +3,12 @@ import type { ReactNode } from "react";
 
 const DashboardLayout = ({ children }: { children: ReactNode }) => {
   return (
-    <div className="flex min-h-screen bg-black text-white">
-      <aside className="min-h-screen w-[335px] shrink-0 border-r border-[#17191f] bg-black px-8 py-8">
+    <div className="flex h-screen overflow-hidden bg-black text-white">
+      <aside className="h-screen w-[335px] shrink-0 overflow-y-auto border-r border-[#17191f] bg-black px-8 py-8">
         <SidebarWrapper />
       </aside>
 
-      <main className="min-h-screen min-w-0 flex-1 bg-black">{children}</main>
+      <main className="h-screen min-w-0 flex-1 overflow-y-auto bg-black">{children}</main>
     </div>
   );
 };

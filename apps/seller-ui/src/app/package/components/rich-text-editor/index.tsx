@@ -13,7 +13,7 @@ const ReactQuill = dynamic<ReactQuillProps>(
   {
     ssr: false,
     loading: () => (
-      <div className="min-h-[250px] rounded-md border border-gray-700 bg-transparent" />
+      <div className="min-h-[320px] rounded-md border border-[#1f2937] bg-[#05070d]" />
     ),
   }
 );
@@ -45,7 +45,7 @@ const RichTextEditor = ({
   }, []);
 
   return (
-    <div className="relative">
+    <div className="relative overflow-hidden rounded-md border border-[#1f2937] bg-[#05070d] shadow-[0_18px_48px_-36px_rgba(0,0,0,0.95)]">
       <ReactQuill
         theme="snow"
         value={editorValue}
@@ -70,51 +70,98 @@ const RichTextEditor = ({
           ],
         }}
         placeholder="Write a detailed product description here..."
-        className="bg-transparent border border-gray-700 text-white rounded-md"
+        className="text-white"
         style={{
-          minHeight: "250px",
+          minHeight: "320px",
         }}
       />
 
       <style>{`
         .ql-toolbar {
-          background: transparent;
-          border-color: #444;
+          align-items: center;
+          background: #0b1220;
+          border: 0 !important;
+          border-bottom: 1px solid #1f2937 !important;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+          padding: 14px !important;
+        }
+
+        .ql-toolbar .ql-formats {
+          align-items: center;
+          display: inline-flex;
+          gap: 4px;
+          margin-right: 4px !important;
+        }
+
+        .ql-toolbar button {
+          border-radius: 6px;
+          height: 30px !important;
+          transition: background 150ms ease, color 150ms ease;
+          width: 30px !important;
+        }
+
+        .ql-toolbar button:hover,
+        .ql-toolbar button.ql-active {
+          background: #1d4ed8;
         }
 
         .ql-container {
-          background: transparent !important;
-          border-color: #444;
+          background: #05070d !important;
+          border: 0 !important;
           color: white;
+          font-size: 15px;
         }
 
-        .ql-picker {
-          color: white !important;
+        .ql-picker,
+        .ql-snow .ql-picker {
+          color: #e5e7eb !important;
         }
 
         .ql-editor {
-          min-height: 200px;
+          line-height: 1.7;
+          min-height: 300px;
+          padding: 18px 20px;
         }
 
         .ql-snow {
-          border-color: #444 !important;
+          border-color: #1f2937 !important;
         }
 
         .ql-editor.ql-blank::before {
-          color: #aaa !important;
+          color: #6b7280 !important;
+          font-style: italic;
+          left: 20px;
+          right: 20px;
         }
 
         .ql-picker-options {
-          background: #333 !important;
+          background: #111827 !important;
+          border-color: #1f2937 !important;
           color: white !important;
+          padding: 6px !important;
         }
 
         .ql-picker-item {
           color: white !important;
         }
 
-        .ql-stroke {
-          stroke: white !important;
+        .ql-snow .ql-stroke {
+          stroke: #d1d5db !important;
+        }
+
+        .ql-snow .ql-fill {
+          fill: #d1d5db !important;
+        }
+
+        .ql-snow .ql-picker-label {
+          border-radius: 6px;
+        }
+
+        .ql-snow .ql-picker-label:hover,
+        .ql-snow .ql-picker-label.ql-active {
+          background: #111827;
         }
       `}</style>
     </div>

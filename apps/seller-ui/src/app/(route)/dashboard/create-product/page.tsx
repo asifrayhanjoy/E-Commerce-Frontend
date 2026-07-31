@@ -594,22 +594,22 @@ const convertFileToBase64 = (file: File) => {
     return (
       <>
       <form
-        className="w-full mx-auto p-8 shadow-md rounded-lg text-white"
+        className="mx-auto w-full max-w-[1540px] px-6 py-8 text-white sm:px-8"
         onSubmit={handleSubmit(onSubmit)}
       >
-        <h2 className="text-2xl py-2 font-semibold font-Poppins text-white">
+        <h2 className="py-2 font-Poppins text-3xl font-bold text-white">
           Create Product
         </h2>
 
-        <div className="flex items-center">
-          <span className="text-[#80Deea] cursor-pointer">Dashboard</span>
-          <ChevronRight size={20} className="opacity-[.8]" />
+        <div className="mt-1 flex items-center gap-1 text-sm font-semibold text-[#c4c8d2]">
+          <span className="cursor-pointer text-[#80Deea]">Dashboard</span>
+          <ChevronRight size={18} className="opacity-[.8]" />
           <span>Create Product</span>
         </div>
 
                     {/* {number-01} */}
-        <div className="py-4 w-full flex flex-col gap-6 md:flex-row">
-          <div className="w-full md:w-1/3">
+        <div className="mt-6 grid w-full gap-6 xl:grid-cols-[420px_minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="w-full rounded-md border border-[#111827] bg-[#070b13] p-5 shadow-[0_18px_48px_-34px_rgba(0,0,0,0.9)]">
             <ImagePlaceHolder
               setOpenImageModal={handleOpenImageModal}
               size="765 x 850"
@@ -622,8 +622,8 @@ const convertFileToBase64 = (file: File) => {
           </div>
 
                     {/* {number-02} */}
-          <div className="w-full md:w-1/3">
-            <div className="w-full flex flex-col gap-2">
+          <div className="w-full rounded-md border border-[#111827] bg-[#070b13] p-5 shadow-[0_18px_48px_-34px_rgba(0,0,0,0.9)]">
+            <div className="flex w-full flex-col gap-4">
               <Input label="Product Title *"
                 placeholder="Enter product title"
                 {...register("title", { required: "Title is required" })}
@@ -710,8 +710,8 @@ const convertFileToBase64 = (file: File) => {
                 <CustomProperties control={control} errors={errors} />
               </div>
 
-              <div className="mt-2 border-amber-50">
-            <label className="block font-semibold text-gray-300 mb-1">
+              <div className="mt-1 border-amber-50">
+            <label className="mb-1 block font-semibold text-gray-300">
              Cash On Delivery *
            </label>
 
@@ -720,11 +720,11 @@ const convertFileToBase64 = (file: File) => {
            required: "Cash on Delivery is required",
             })}
            defaultValue="yes"
-           className="w-full border outline-none border-amber-700 bg-transparent">
-          <option value="yes" className="bg-black">
+           className="h-11 w-full rounded-md border border-[#1f2937] bg-white px-3 text-sm font-semibold text-[#111827] outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20">
+          <option value="yes" className="bg-white text-[#111827]">
             Yes
           </option>
-          <option value="no" className="bg-black">
+          <option value="no" className="bg-white text-[#111827]">
             No
          </option>
          </select>
@@ -732,10 +732,10 @@ const convertFileToBase64 = (file: File) => {
             </div>
           </div>
                     {/* {number-03} */}
-          <div className="w-full md:w-1/3">
-            <div className="w-full flex flex-col gap-2">
-              <div className="mt-2">
-          <label className="block font-semibold text-gray-300 mb-1">
+          <div className="w-full rounded-md border border-[#111827] bg-[#070b13] p-5 shadow-[0_18px_48px_-34px_rgba(0,0,0,0.9)]">
+            <div className="flex w-full flex-col gap-4">
+              <div className="mt-1">
+          <label className="mb-1 block font-semibold text-gray-300">
             Category *
             </label>
 
@@ -745,9 +745,9 @@ const convertFileToBase64 = (file: File) => {
           render={({ field }) => (
          <select
         {...field}
-        className="w-full border border-gray-700 bg-transparent rounded-md p-2 outline-none"
+        className="h-11 w-full rounded-md border border-[#1f2937] bg-white px-3 text-sm font-semibold text-[#111827] outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
       >
-        <option value="" className="bg-black">
+        <option value="" className="bg-white text-[#111827]">
           {isLoading ? "Loading categories..." : "Select Category"}
         </option>
 
@@ -755,7 +755,7 @@ const convertFileToBase64 = (file: File) => {
           <option
             key={getCategoryValue(category, index)}
             value={getCategoryValue(category, index)}
-            className="bg-black"
+            className="bg-white text-[#111827]"
           >
             {getCategoryLabel(category)}
           </option>
@@ -771,8 +771,8 @@ const convertFileToBase64 = (file: File) => {
   )}
 </div>
 
-<div className="mt-2">
-  <label className="block font-semibold text-gray-300 mb-1">
+<div className="mt-1">
+  <label className="mb-1 block font-semibold text-gray-300">
     Sub Category *
   </label>
 
@@ -786,9 +786,9 @@ const convertFileToBase64 = (file: File) => {
       <select
         {...field}
         disabled={!selectedCategory}
-        className="w-full border border-gray-700 bg-transparent rounded-md p-2 outline-none disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-11 w-full rounded-md border border-[#1f2937] bg-white px-3 text-sm font-semibold text-[#111827] outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <option value="" className="bg-black">
+        <option value="" className="bg-white text-[#111827]">
           Select Sub Category
         </option>
 
@@ -796,7 +796,7 @@ const convertFileToBase64 = (file: File) => {
           <option
             key={getCategoryValue(subCategory, index)}
             value={getCategoryValue(subCategory, index)}
-            className="bg-black"
+            className="bg-white text-[#111827]"
           >
             {getCategoryLabel(subCategory)}
           </option>
@@ -812,8 +812,8 @@ const convertFileToBase64 = (file: File) => {
   )}
 </div>
 
-<div className="mt-2">
-  <label className="block font-semibold text-gray-300 mb-1">
+<div className="mt-1">
+  <label className="mb-2 block font-semibold text-gray-300">
     Detailed Description * <span className="text-blue-400">(Min 20 Characters)</span>
   </label>
 
@@ -957,7 +957,7 @@ const convertFileToBase64 = (file: File) => {
 </div>
 
 <div className="mt-3">
-  <label className="block font-semibold text-gray-300 mb-1">
+  <label className="mb-2 block font-semibold text-gray-300">
     Select Discount Codes (optional)
   </label>
 {
@@ -971,7 +971,7 @@ const convertFileToBase64 = (file: File) => {
         <button
           key={code.id}
           type="button"
-          className={`px-3 py-1 rounded-md text-sm font-semibold border ${
+          className={`rounded-md border px-3 py-2 text-sm font-semibold transition ${
             watch("discountCodes")?.includes(code.id)
               ? "bg-blue-600 text-white border-blue-600"
               : "bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700"
@@ -1001,19 +1001,19 @@ const convertFileToBase64 = (file: File) => {
           </div>
 
         </div>
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex justify-end gap-3 border-t border-[#111827] pt-6">
   {isChanged && (
     <button
       type="button"
       onClick={handleSaveDraft}
-      className="px-4 py-2 bg-gray-700 text-white rounded-md"
+      className="rounded-md border border-[#1f2937] bg-[#111827] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#172033]"
     >
       Save Draft
     </button>
   )}
   <button
     type="submit"
-    className="px-4 py-2 bg-blue-600 text-white rounded-md"
+    className="rounded-md bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
     disabled={isLoading || loading}
   >
     {isLoading || loading ? "Creating..." : "Create"}

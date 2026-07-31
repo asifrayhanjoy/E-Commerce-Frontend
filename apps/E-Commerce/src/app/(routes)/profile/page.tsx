@@ -1,6 +1,7 @@
 "use client";
 
 import QuickActionCard from "@/contexts/QuickActionCard";
+import CustomerInboxPage from "@/app/inbox/page";
 import useUser from "@/hooks/use.User";
 import axiosInstance from "@/utils/axiosinstance";
 import { getImageUrl } from "@/utils/shopImages";
@@ -660,6 +661,10 @@ function ProfilePageContent() {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            ) : activeTab === "Inbox" ? (
+              <div className="-mx-7 -my-8 overflow-hidden rounded bg-white">
+                <CustomerInboxPage />
               </div>
             ) : activeTab === "Shipping Address" ? (
               <div>
