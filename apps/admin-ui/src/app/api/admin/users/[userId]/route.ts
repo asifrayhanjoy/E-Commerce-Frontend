@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getDatabaseUser } from "../../_lib/admin-data";
+import { getAdminBackendBases } from "../../_lib/backend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,12 +10,7 @@ type RouteContext = {
   params: Promise<{ userId: string }> | { userId: string };
 };
 
-const backendBases = [
-  process.env.NEXT_PUBLIC_API_URL,
-  process.env.NEXT_PUBLIC_SERVER_URI,
-  "http://localhost:8383/api/v1",
-  "http://localhost:8080/api/v1",
-].filter(Boolean) as string[];
+const backendBases = getAdminBackendBases();
 
 const getBackendUser = async (userId: string) => {
   for (const base of backendBases) {

@@ -1,9 +1,22 @@
 import axios from "axios";
 
-const chatApiBaseURL = process.env.NEXT_PUBLIC_CHAT_API_URL || "";
+const normalizeApiRoot = (url: string) =>
+  url.replace(/\/$/, "").replace(/\/api\/v1\/?$/, "");
+
+const configuredApiBaseUrl = normalizeApiRoot(
+  process.env.NEXT_PUBLIC_API_URL ||
+    process.env.NEXT_PUBLIC_SERVER_URI ||
+    process.env.API_GATEWAY_URL ||
+    ""
+);
+const apiBaseUrl =
+  typeof window === "undefined" ? configuredApiBaseUrl : "";
+const chatApiBaseURL = normalizeApiRoot(
+  process.env.NEXT_PUBLIC_CHAT_API_URL || process.env.CHATTING_SERVICE_URL || ""
+);
 
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: apiBaseUrl,
   withCredentials: true,
 });
 
@@ -11,7 +24,7 @@ axiosInstance.interceptors.request.use((config) => {
   const requestUrl = String(config.url || "");
 
   if (requestUrl.startsWith("/api/v1/chats")) {
-    config.baseURL = chatApiBaseURL;
+    config.baseURL = typeof window === "undefined" ? chatApiBaseURL : "";
   }
 
   return config;
@@ -57,7 +70,7 @@ axiosInstance.interceptors.response.use((response) => response, async (error) =>
 
       try {
         await axios.post(
-          "http://localhost:8080/api/v1/auth/refresh-token",
+          `${apiBaseUrl}/api/v1/auth/refresh-token`,
           { role: "user" },
           {
             withCredentials: true,

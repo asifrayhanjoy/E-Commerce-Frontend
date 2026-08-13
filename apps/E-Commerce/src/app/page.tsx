@@ -6,6 +6,7 @@ import RecommendedProducts from "@/components/RecommendedProducts";
 import SectionTitle from "@/components/SectionTitle/page";
 import axiosInstance from "@/utils/axiosinstance";
 import {
+  getImageUrl,
   getShopAvatarImage,
   getShopCoverImage,
 } from "@/utils/shopImages";
@@ -27,26 +28,58 @@ type ShopImage = {
   url?: string;
 };
 
+type ShopSeller = {
+  avatar?: ShopImage[] | ShopImage | string | null;
+  avatarUrl?: string;
+  image?: ShopImage | string;
+  imageUrl?: string;
+  profilePhoto?: string;
+  profilePhotoUrl?: string;
+  profileImage?: string;
+  profileImageUrl?: string;
+  updatedAt?: string;
+  updated_at?: string;
+};
+
 type HomeShop = {
   id?: string;
   _id?: string;
   name?: string;
   category?: string;
+  image?: ShopImage | string;
+  imageUrl?: string;
+  profileImage?: string;
+  profileImageUrl?: string;
   coverBanner?: ShopImage[] | ShopImage | string | null;
   coverBannerUrl?: string;
   coverPhoto?: string;
   coverPhotoUrl?: string;
+  coverImage?: string;
+  coverImageUrl?: string;
+  banner?: ShopImage | string;
+  bannerUrl?: string;
+  siteBanner?: string;
   avatar?: ShopImage[];
   avatarUrl?: string;
   profilePhoto?: string;
   profilePhotoUrl?: string;
   address?: string;
   ratings?: number;
+  updatedAt?: string;
+  updated_at?: string;
   followersCount?: number;
   followerCount?: number;
   followers?: number | unknown[];
-  sellers?: {
-    avatar?: ShopImage[];
+  seller?: ShopSeller;
+  sellers?: ShopSeller;
+  storefront?: {
+    avatarImage?: ShopImage | string;
+    coverImage?: ShopImage | string;
+    cover?: {
+      images?: ShopImage[] | ShopImage | string | null;
+    };
+    updatedAt?: string;
+    updated_at?: string;
   };
   products?: {
     images?: ShopImage[];
@@ -135,6 +168,50 @@ const formatFollowers = (count: number) =>
   `${count} ${count === 1 ? "Follower" : "Followers"}`;
 
 const hasShopData = (shop: HomeShop) => Boolean(getShopId(shop) && shop.name);
+
+const getExplicitShopCoverImage = (shop: HomeShop) =>
+  getImageUrl(
+    shop.coverBannerUrl,
+    shop.coverPhotoUrl,
+    shop.coverPhoto,
+    shop.coverImageUrl,
+    shop.coverImage,
+    shop.bannerUrl,
+    shop.banner,
+    shop.siteBanner,
+    shop.coverBanner,
+    shop.storefront?.coverImage,
+    shop.storefront?.cover?.images
+  );
+
+const getShopImageVersion = (shop: HomeShop) =>
+  [
+    shop.updatedAt,
+    shop.updated_at,
+    shop.sellers?.updatedAt,
+    shop.sellers?.updated_at,
+    shop.seller?.updatedAt,
+    shop.seller?.updated_at,
+    shop.storefront?.updatedAt,
+    shop.storefront?.updated_at,
+  ]
+    .filter(Boolean)
+    .join("-");
+
+const getVersionedImageUrl = (url: string, version: string) => {
+  const imageUrl = url.trim();
+
+  if (!imageUrl || !version || /^(data|blob):/i.test(imageUrl)) {
+    return imageUrl;
+  }
+
+  const hashIndex = imageUrl.indexOf("#");
+  const source = hashIndex >= 0 ? imageUrl.slice(0, hashIndex) : imageUrl;
+  const hash = hashIndex >= 0 ? imageUrl.slice(hashIndex) : "";
+  const separator = source.includes("?") ? "&" : "?";
+
+  return `${source}${separator}v=${encodeURIComponent(version)}${hash}`;
+};
 
 const getHomeProducts = async (): Promise<HomeProducts> => {
   try {
@@ -254,9 +331,20 @@ const ShopSkeletonGrid = () => (
 
 const TopShopCard = ({ shop }: { shop: HomeShop }) => {
   const shopId = getShopId(shop);
-  const coverImage = getShopCoverImage(shop);
-  const avatarImage = getShopAvatarImage(shop);
-  const shopImage = coverImage || avatarImage;
+  const imageVersion = getShopImageVersion(shop);
+  const coverImage = getVersionedImageUrl(
+    getExplicitShopCoverImage(shop),
+    imageVersion
+  );
+  const avatarImage = getVersionedImageUrl(
+    getShopAvatarImage(shop),
+    imageVersion
+  );
+  const fallbackImage = getVersionedImageUrl(
+    getShopCoverImage(shop),
+    imageVersion
+  );
+  const shopImage = coverImage || avatarImage || fallbackImage;
   const address = shop.address?.trim();
   const category = shop.category?.trim();
   const rating = Number(shop.ratings || 0);
@@ -427,7 +515,10 @@ export default function Index() {
   } = useQuery({
     queryKey: ["home-products"],
     queryFn: getHomeProducts,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: "always",
+    refetchOnReconnect: "always",
   });
 
   return (

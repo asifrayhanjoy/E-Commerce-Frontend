@@ -11,7 +11,7 @@ type LoginFormData = {
   password: string;
 };
 
-const API_URL = "http://localhost:8383/api/v1/auth";
+const LOGIN_URL = "/api/admin/login";
 
 const getErrorMessage = (error: AxiosError) =>
   (error.response?.data as { message?: string })?.message ||
@@ -31,7 +31,7 @@ const Page = () => {
   const loginMutation = useMutation({
     mutationFn: async (data: LoginFormData) => {
       const response = await axios.post(
-        `${API_URL}/login-admin`,
+        LOGIN_URL,
         {
           email: data.email,
           password: data.password,

@@ -51,12 +51,18 @@ type ChatConversation = {
 };
 
 const chatSocketUrl =
-  process.env.NEXT_PUBLIC_CHAT_SOCKET_URL || "http://localhost:8484";
+  process.env.NEXT_PUBLIC_CHAT_SOCKET_URL ||
+  (process.env.NODE_ENV === "development" ? "http://localhost:8484" : "");
 
 const loadSocketClient = () =>
   new Promise<SocketIoFactory>((resolve, reject) => {
     if (typeof window === "undefined") {
       reject(new Error("Socket client can only load in the browser."));
+      return;
+    }
+
+    if (!chatSocketUrl) {
+      reject(new Error("Chat socket URL is not configured."));
       return;
     }
 

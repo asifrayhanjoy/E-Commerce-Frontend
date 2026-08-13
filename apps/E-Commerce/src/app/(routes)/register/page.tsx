@@ -48,7 +48,7 @@ const Register = () => {
   // Step 1 — Submit registration form → send OTP to email
   const onSubmit = async (data: FormData) => { setServerError(null); setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/register", {
+      const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -92,7 +92,7 @@ const Register = () => {
     if (!canResend || !userData) return;
     setServerError(null);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/register", {
+      const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -124,7 +124,7 @@ const Register = () => {
     setServerError(null);
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/verify-otp", {
+      const res = await fetch("/api/v1/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

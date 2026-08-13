@@ -21,12 +21,22 @@ function mergeIgnoredWatchPaths(existingIgnored) {
   );
 }
 
+function normalizeApiRoot(url) {
+  return url.replace(/\/$/, "").replace(/\/api\/v1\/?$/, "");
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
-    const chattingServiceUrl = (
-      process.env.CHATTING_SERVICE_URL || "http://localhost:8484"
-    ).replace(/\/$/, "");
+    const chattingServiceUrl = normalizeApiRoot(
+      process.env.CHATTING_SERVICE_URL ||
+        process.env.NEXT_PUBLIC_CHAT_API_URL ||
+        ""
+    );
+
+    if (!chattingServiceUrl) {
+      return [];
+    }
 
     return [
       {

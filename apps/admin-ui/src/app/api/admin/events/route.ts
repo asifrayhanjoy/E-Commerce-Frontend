@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getDatabaseEvents } from "../_lib/admin-data";
+import { getProductBackendBases } from "../_lib/backend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const backendBases = [
-  process.env.NEXT_PUBLIC_API_URL,
-  process.env.NEXT_PUBLIC_SERVER_URI,
-  "http://localhost:8181/api/v1",
-  "http://localhost:8383/api/v1",
-  "http://localhost:8080/api/v1",
-].filter(Boolean) as string[];
+const backendBases = getProductBackendBases();
 
 const pagination = (page: number, limit: number, total = 0) => ({
   page,

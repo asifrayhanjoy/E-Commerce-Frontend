@@ -4,8 +4,15 @@ const configuredApiBaseUrl = (process.env.NEXT_PUBLIC_API_URL || "").replace(
   /\/api\/v1\/?$/,
   ""
 );
+const configuredFallbackApiBaseUrl = (
+  process.env.NEXT_PUBLIC_SERVER_URI ||
+  process.env.API_GATEWAY_URL ||
+  ""
+).replace(/\/api\/v1\/?$/, "");
 const apiBaseUrl =
-  typeof window === "undefined" ? configuredApiBaseUrl.replace(/\/$/, "") : "";
+  typeof window === "undefined"
+    ? (configuredApiBaseUrl || configuredFallbackApiBaseUrl).replace(/\/$/, "")
+    : "";
 
 const axiosInstance = axios.create({
   baseURL: apiBaseUrl,

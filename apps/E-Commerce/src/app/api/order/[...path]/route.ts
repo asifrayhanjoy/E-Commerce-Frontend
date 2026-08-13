@@ -6,14 +6,28 @@ type OrderRouteContext = {
   }>;
 };
 
+const normalizeOrderServiceRoot = (url: string) =>
+  url.replace(/\/$/, "").replace(/\/api\/?$/, "");
+
 const orderServiceUrl =
-  process.env.ORDER_SERVICE_URL?.replace(/\/$/, "") || "http://localhost:8282";
+  (process.env.ORDER_SERVICE_URL
+    ? normalizeOrderServiceRoot(process.env.ORDER_SERVICE_URL)
+    : "") ||
+  (process.env.NODE_ENV === "production" ? "" : "http://localhost:8282");
 
 const proxyOrderRequest = async (
   request: NextRequest,
   context: OrderRouteContext
 ) => {
   const { path = [] } = await context.params;
+
+  if (!orderServiceUrl) {
+    return Response.json(
+      { message: "Order service URL is not configured." },
+      { status: 503 }
+    );
+  }
+
   const targetUrl = `${orderServiceUrl}/api/${path.join("/")}${request.nextUrl.search}`;
   const headers = new Headers();
   const contentType = request.headers.get("content-type");

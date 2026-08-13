@@ -43,7 +43,7 @@ const ForgotPassword = () => {
     setServerError(null);
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/forgot-password-user", {
+      const res = await fetch("/api/v1/auth/forgot-password-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -79,7 +79,7 @@ const ForgotPassword = () => {
     setServerError(null);
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/forgot-password-user", {
+      const res = await fetch("/api/v1/auth/forgot-password-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -102,7 +102,7 @@ const ForgotPassword = () => {
     setServerError(null);
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/verify-forgot-password-user", {
+      const res = await fetch("/api/v1/auth/verify-forgot-password-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -128,7 +128,7 @@ const ForgotPassword = () => {
     setServerError(null);
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:8080/api/v1/auth/reset-password-user", {
+      const res = await fetch("/api/v1/auth/reset-password-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

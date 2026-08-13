@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 
 import { getDatabaseDashboard } from "../_lib/admin-data";
+import { getAdminBackendBases } from "../_lib/backend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const backendBases = [
-  process.env.NEXT_PUBLIC_API_URL,
-  process.env.NEXT_PUBLIC_SERVER_URI,
-  "http://localhost:8383/api/v1",
-  "http://localhost:8080/api/v1",
-].filter(Boolean) as string[];
+const backendBases = getAdminBackendBases();
 
 const fallbackDashboard = {
   stats: {

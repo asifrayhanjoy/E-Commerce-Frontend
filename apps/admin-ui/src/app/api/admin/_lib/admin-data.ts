@@ -19,12 +19,15 @@ declare global {
 const fallbackImage =
   "https://placehold.co/80x80/111827/ffffff?text=Item";
 
-const backendRootCandidates = [
-  path.resolve(process.cwd(), "..", "E-Commerce-BG"),
-  path.resolve(process.cwd(), "..", "..", "..", "E-Commerce-BG"),
-  path.resolve(process.cwd(), "..", "..", "..", "..", "E-Commerce-BG"),
-  "/Users/asifrayhan/Downloads/E-Commerce/E-Commerce-BG",
-];
+const backendRootCandidates =
+  process.env.NODE_ENV === "production"
+    ? []
+    : [
+        path.resolve(process.cwd(), "..", "E-Commerce-BG"),
+        path.resolve(process.cwd(), "..", "..", "..", "E-Commerce-BG"),
+        path.resolve(process.cwd(), "..", "..", "..", "..", "E-Commerce-BG"),
+        "/Users/asifrayhan/Downloads/E-Commerce/E-Commerce-BG",
+      ];
 
 const parseEnvFile = (envPath: string) => {
   if (!fs.existsSync(envPath)) return;
@@ -477,15 +480,6 @@ const paginate = <T>(items: T[], page: number, limit: number) => {
   const safePage = Math.max(1, Number(page) || 1);
   const safeLimit = Math.max(1, Number(limit) || 10);
   const start = (safePage - 1) * safeLimit;
-
-  const distributionByCountry = mappedSellers.reduce<Record<string, number>>(
-    (accumulator, seller) => {
-      const country = getText(seller.country, "Global");
-      accumulator[country] = (accumulator[country] ?? 0) + 1;
-      return accumulator;
-    },
-    {}
-  );
 
   return {
     items: items.slice(start, start + safeLimit),

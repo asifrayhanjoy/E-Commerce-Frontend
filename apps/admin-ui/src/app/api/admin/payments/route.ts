@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getDatabaseOrders } from "../_lib/admin-data";
+import { getOrderBackendBases } from "../_lib/backend";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ADMIN_FEE_RATE = 0.1;
 
-const backendBases = [
-  process.env.NEXT_PUBLIC_API_URL,
-  process.env.NEXT_PUBLIC_SERVER_URI,
-  "http://localhost:8282/api",
-  "http://localhost:8383/api/v1",
-  "http://localhost:8080/api/v1",
-].filter(Boolean) as string[];
+const backendBases = getOrderBackendBases();
 
 const formatCurrency = (value: number) => `$${Number(value || 0).toFixed(2)}`;
 

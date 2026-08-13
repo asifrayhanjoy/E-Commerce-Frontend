@@ -87,6 +87,22 @@ const getUniqueImageUrls = (...values: unknown[]) => {
 
 export const getShopAvatarImage = (shop?: any) =>
   getImageUrl(
+    shop?.sellers?.avatarUrl,
+    shop?.sellers?.profilePhotoUrl,
+    shop?.sellers?.profilePhoto,
+    shop?.sellers?.profileImageUrl,
+    shop?.sellers?.profileImage,
+    shop?.sellers?.imageUrl,
+    shop?.sellers?.image,
+    shop?.sellers?.avatar,
+    shop?.seller?.avatarUrl,
+    shop?.seller?.profilePhotoUrl,
+    shop?.seller?.profilePhoto,
+    shop?.seller?.profileImageUrl,
+    shop?.seller?.profileImage,
+    shop?.seller?.imageUrl,
+    shop?.seller?.image,
+    shop?.seller?.avatar,
     shop?.avatarUrl,
     shop?.profilePhotoUrl,
     shop?.profilePhoto,
@@ -96,8 +112,8 @@ export const getShopAvatarImage = (shop?: any) =>
     shop?.image,
     shop?.avatar,
     shop?.storefront?.avatarImage,
-    shop?.sellers?.avatar,
-    shop?.seller?.avatar
+    shop?.sellers,
+    shop?.seller
   );
 
 export const getShopCoverImage = (shop?: any) =>

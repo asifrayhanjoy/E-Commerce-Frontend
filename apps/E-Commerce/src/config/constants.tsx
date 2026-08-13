@@ -1,5 +1,9 @@
 import React from "react";
 
+const sellerAppUrl =
+    process.env.NEXT_PUBLIC_SELLER_APP_URL ||
+    (process.env.NODE_ENV === "development" ? "http://localhost:6002" : "");
+
 export type NavItemsTypes = {
     title: string
     href: string
@@ -25,6 +29,6 @@ export const navItems: NavItemsTypes[] = [
     },
     {
         title: "Become A Seller",
-        href: "/become-a-seller"
+        href: sellerAppUrl ? `${sellerAppUrl}/register` : "/become-a-seller"
     }
 ]

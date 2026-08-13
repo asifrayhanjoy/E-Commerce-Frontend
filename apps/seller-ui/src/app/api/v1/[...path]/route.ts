@@ -6,21 +6,41 @@ type ApiRouteContext = {
   }>;
 };
 
-const gatewayUrl =
-  (
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.API_GATEWAY_URL ||
-    "http://localhost:8080"
-  )
-    .replace(/\/$/, "")
-    .replace(/\/api\/v1\/?$/, "");
-const productServiceUrl = (
-  process.env.PRODUCT_SERVICE_URL || "http://localhost:8181"
-).replace(/\/$/, "");
-const chattingServiceUrl = (
-  process.env.CHATTING_SERVICE_URL || "http://localhost:8484"
-).replace(/\/$/, "");
+const isProduction = process.env.NODE_ENV === "production";
 const apiRequestTimeoutMs = 15000;
+
+const normalizeApiRoot = (url: string) =>
+  url.replace(/\/$/, "").replace(/\/api\/v1\/?$/, "");
+
+const getServiceRoot = (
+  configuredUrls: Array<string | undefined>,
+  localFallback: string
+) => {
+  const configuredUrl = configuredUrls.find((url) => url?.trim());
+
+  if (configuredUrl) {
+    return normalizeApiRoot(configuredUrl.trim());
+  }
+
+  return isProduction ? "" : localFallback;
+};
+
+const gatewayUrl = getServiceRoot(
+  [
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.NEXT_PUBLIC_SERVER_URI,
+    process.env.API_GATEWAY_URL,
+  ],
+  "http://localhost:8080"
+);
+const productServiceUrl = getServiceRoot(
+  [process.env.PRODUCT_SERVICE_URL],
+  "http://localhost:8181"
+);
+const chattingServiceUrl = getServiceRoot(
+  [process.env.CHATTING_SERVICE_URL, process.env.NEXT_PUBLIC_CHAT_API_URL],
+  "http://localhost:8484"
+);
 
 const splitSetCookieHeader = (header: string) =>
   header.split(/,(?=\s*[^;,=\s]+=[^;,]+)/g).map((value) => value.trim());
@@ -32,14 +52,18 @@ const getTargetUrl = (path: string[], search: string) => {
   const requestPath = path.join("/");
 
   if (path[0] === "products") {
-    return `${productServiceUrl}/api/v1/${requestPath}${search}`;
+    return productServiceUrl
+      ? `${productServiceUrl}/api/v1/${requestPath}${search}`
+      : "";
   }
 
   if (path[0] === "chats") {
-    return `${chattingServiceUrl}/api/v1/${requestPath}${search}`;
+    return chattingServiceUrl
+      ? `${chattingServiceUrl}/api/v1/${requestPath}${search}`
+      : "";
   }
 
-  return `${gatewayUrl}/api/v1/${requestPath}${search}`;
+  return gatewayUrl ? `${gatewayUrl}/api/v1/${requestPath}${search}` : "";
 };
 
 const proxyApiRequest = async (
@@ -48,6 +72,14 @@ const proxyApiRequest = async (
 ) => {
   const { path = [] } = await context.params;
   const targetUrl = getTargetUrl(path, request.nextUrl.search);
+
+  if (!targetUrl) {
+    return Response.json(
+      { message: "Backend service URL is not configured." },
+      { status: 503 }
+    );
+  }
+
   const requestHeaders = new Headers();
   const contentType = request.headers.get("content-type");
   const cookie = request.headers.get("cookie");

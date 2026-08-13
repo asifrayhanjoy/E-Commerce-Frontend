@@ -12,28 +12,45 @@ declare global {
   var __customerUiPrismaClient: any | undefined;
 }
 
+const normalizeApiV1Base = (value?: string) => {
+  if (!value?.trim()) return "";
+
+  const base = value.trim().replace(/\/+$/, "");
+  if (/\/api\/v1$/i.test(base)) return base;
+  if (/\/api$/i.test(base)) return `${base}/v1`;
+
+  return `${base}/api/v1`;
+};
+
 const backendBases = [
-  process.env.NEXT_PUBLIC_API_URL,
-  process.env.NEXT_PUBLIC_SERVER_URI,
-  "http://localhost:8383/api/v1",
-  "http://localhost:8080/api/v1",
+  normalizeApiV1Base(process.env.NEXT_PUBLIC_API_URL),
+  normalizeApiV1Base(process.env.NEXT_PUBLIC_SERVER_URI),
+  normalizeApiV1Base(process.env.API_GATEWAY_URL),
+  ...(process.env.NODE_ENV === "production"
+    ? []
+    : ["http://localhost:8383/api/v1", "http://localhost:8080/api/v1"]),
 ].filter(Boolean) as string[];
 
 const customizationUrls = [
   process.env.NEXT_PUBLIC_ADMIN_CUSTOMIZATION_URL,
-  "http://localhost:6003/api/admin/customization",
+  ...(process.env.NODE_ENV === "production"
+    ? []
+    : ["http://localhost:6003/api/admin/customization"]),
   ...backendBases.flatMap((base) => [
     `${base}/admin/customization`,
     `${base}/auth/admin/customization`,
   ]),
 ].filter(Boolean) as string[];
 
-const backendRootCandidates = [
-  path.resolve(process.cwd(), "..", "E-Commerce-BG"),
-  path.resolve(process.cwd(), "..", "..", "..", "E-Commerce-BG"),
-  path.resolve(process.cwd(), "..", "..", "..", "..", "E-Commerce-BG"),
-  "/Users/asifrayhan/Downloads/E-Commerce/E-Commerce-BG",
-];
+const backendRootCandidates =
+  process.env.NODE_ENV === "production"
+    ? []
+    : [
+        path.resolve(process.cwd(), "..", "E-Commerce-BG"),
+        path.resolve(process.cwd(), "..", "..", "..", "E-Commerce-BG"),
+        path.resolve(process.cwd(), "..", "..", "..", "..", "E-Commerce-BG"),
+        "/Users/asifrayhan/Downloads/E-Commerce/E-Commerce-BG",
+      ];
 
 const parseEnvFile = (envPath: string) => {
   if (!fs.existsSync(envPath)) return;
