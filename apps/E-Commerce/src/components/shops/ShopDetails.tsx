@@ -381,7 +381,7 @@ const getSocialLinks = (shop?: Shop) => {
 };
 
 const EmptyTabPanel = ({ title }: { title: string }) => (
-  <div className="mt-5 flex min-h-[230px] items-center justify-center rounded-md bg-[#e5e7ef] px-6 text-center shadow-[0_12px_32px_-30px_rgba(15,23,42,0.7)]">
+  <div className="mt-5 flex min-h-[230px] items-center justify-center rounded-2xl bg-slate-100 px-6 text-center shadow-[0_12px_32px_-30px_rgba(15,23,42,0.7)]">
     <div>
       <PackageSearch className="mx-auto text-blue-700" size={42} />
       <h3 className="mt-4 text-xl font-black text-slate-950">{title}</h3>
@@ -390,41 +390,41 @@ const EmptyTabPanel = ({ title }: { title: string }) => (
 );
 
 const ShopDetailsSkeleton = () => (
-  <main className="min-h-screen bg-[#f4f5f7] text-slate-950">
-    <section className="bg-[#06020d]">
+  <main className="min-h-screen bg-[#fafafa] text-slate-950">
+    <section className="bg-[#0b0f19]">
       <div className="mx-auto grid max-w-[1500px] gap-7 px-4 pb-28 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)] xl:px-0">
         <div className="space-y-7">
-          <div className="h-[280px] animate-pulse bg-[#171326] md:h-[360px]" />
+          <div className="h-[280px] animate-pulse rounded-[24px] bg-[#111827] md:h-[360px]" />
           <div className="grid grid-cols-3 gap-4">
             {Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={index}
-                className="h-[96px] animate-pulse bg-[#171326] sm:h-[124px]"
+                className="h-[96px] animate-pulse rounded-xl bg-[#111827] sm:h-[124px]"
               />
             ))}
           </div>
         </div>
         <div className="pt-11">
-          <div className="h-5 w-full max-w-[720px] animate-pulse rounded bg-[#171326]" />
-          <div className="mt-4 h-5 w-4/5 animate-pulse rounded bg-[#171326]" />
-          <div className="mt-9 h-7 w-20 animate-pulse rounded bg-[#171326]" />
+          <div className="h-5 w-full max-w-[720px] animate-pulse rounded bg-[#111827]" />
+          <div className="mt-4 h-5 w-4/5 animate-pulse rounded bg-[#111827]" />
+          <div className="mt-9 h-7 w-20 animate-pulse rounded bg-[#111827]" />
           <div className="mt-4 flex gap-3">
             {Array.from({ length: 3 }).map((_, index) => (
               <div
                 key={index}
-                className="h-10 w-20 animate-pulse rounded-full bg-[#171326]"
+                className="h-10 w-20 animate-pulse rounded-full bg-[#111827]"
               />
             ))}
           </div>
-          <div className="mt-9 h-12 w-32 animate-pulse rounded bg-[#171326]" />
+          <div className="mt-9 h-12 w-32 animate-pulse rounded bg-[#111827]" />
         </div>
       </div>
     </section>
 
     <section className="relative -mt-20">
       <div className="mx-auto grid max-w-[1110px] gap-7 px-4 sm:px-6 lg:grid-cols-[minmax(0,2fr)_410px] xl:px-0">
-        <div className="h-[230px] animate-pulse rounded-md bg-[#e5e7ef]" />
-        <div className="h-[230px] animate-pulse rounded-md bg-[#e5e7ef]" />
+        <div className="h-[230px] animate-pulse rounded-[24px] bg-slate-100" />
+        <div className="h-[230px] animate-pulse rounded-[24px] bg-slate-100" />
       </div>
     </section>
   </main>
@@ -642,9 +642,9 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
 
   if (isError) {
     return (
-      <main className="min-h-screen bg-[#f4f5f7] text-slate-950">
+      <main className="min-h-screen bg-[#fafafa] text-slate-950">
         <div className="mx-auto flex min-h-[560px] w-[90%] max-w-[900px] items-center justify-center py-12 lg:w-[80%]">
-          <div className="w-full rounded-md bg-white px-6 py-12 text-center shadow-sm">
+          <div className="w-full rounded-[28px] border border-slate-200/80 bg-white px-6 py-12 text-center shadow-sm">
             <Store className="mx-auto text-blue-700" size={46} />
             <h1 className="mt-5 text-3xl font-black text-slate-950">
               Shop could not load
@@ -656,7 +656,7 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
             <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
               <button
                 type="button"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-blue-700 px-5 text-sm font-bold text-white transition hover:bg-blue-800"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 text-sm font-bold text-white transition hover:bg-blue-800"
                 onClick={() => refetch()}
               >
                 <RefreshCw size={17} />
@@ -678,9 +678,9 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
 
   if (!shop) {
     return (
-      <main className="min-h-screen bg-[#f4f5f7] text-slate-950">
+      <main className="min-h-screen bg-[#fafafa] text-slate-950">
         <div className="mx-auto flex min-h-[560px] w-[90%] max-w-[900px] items-center justify-center py-12 lg:w-[80%]">
-          <div className="w-full rounded-md bg-white px-6 py-12 text-center shadow-sm">
+          <div className="w-full rounded-[28px] border border-slate-200/80 bg-white px-6 py-12 text-center shadow-sm">
             <PackageSearch className="mx-auto text-blue-700" size={50} />
             <h1 className="mt-5 text-3xl font-black text-slate-950">
               Shop not found
@@ -690,7 +690,7 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
             </p>
             <Link
               href="/shops"
-              className="mt-7 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-slate-950 px-5 text-sm font-bold text-white transition hover:bg-blue-700"
+              className="mt-7 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-bold text-white transition hover:bg-blue-700"
             >
               <ArrowLeft size={17} />
               Back to Shops
@@ -702,11 +702,11 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f5f7] text-slate-950">
-      <section className="relative overflow-hidden bg-[#06020d]">
+    <main className="min-h-screen bg-[#fafafa] text-slate-950">
+      <section className="relative overflow-hidden bg-[#0b0f19]">
         <div className="mx-auto grid max-w-[1500px] gap-7 px-4 pb-28 sm:px-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(380px,0.95fr)] lg:pb-32 xl:px-0">
           <div className="space-y-7">
-            <div className="h-[280px] overflow-hidden bg-[#11101c] sm:h-[320px] md:h-[360px]">
+            <div className="h-[280px] overflow-hidden rounded-[24px] bg-[#111827] sm:h-[320px] md:h-[360px]">
               {activeHeroImage ? (
                 <img
                   src={activeHeroImage}
@@ -714,13 +714,13 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
                   className="h-full w-full object-cover object-top"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-5xl font-black text-white/30">
+                <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-900 to-blue-900 text-5xl font-black text-white/50">
                   {getShopInitial(shop.name)}
                 </div>
               )}
             </div>
 
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-[0_14px_34px_-28px_rgba(15,23,42,0.7)]">
+            <div className="rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_14px_34px_-28px_rgba(15,23,42,0.7)]">
               <div className="grid grid-cols-3 gap-3 sm:gap-4">
                 {(galleryImages.length ? galleryImages : ["", "", ""])
                   .slice(0, 3)
@@ -763,7 +763,7 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
               {heroTags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full bg-[#222033] px-4 py-2 text-sm font-semibold text-gray-100"
+                  className="rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm font-semibold text-slate-100"
                 >
                   {tag}
                 </span>
@@ -774,14 +774,14 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
               <Link
                 href={PRODUCT_DETAILS_PATH}
                 onClick={() => saveSelectedProductDetails(firstProduct)}
-                className="mt-9 inline-flex h-12 items-center rounded-md bg-[#72f24e] px-6 text-sm font-bold text-[#17320f] shadow-[0_12px_34px_rgba(114,242,78,0.18)] transition hover:bg-[#83ff63]"
+                className="mt-9 inline-flex h-12 items-center rounded-xl bg-white px-6 text-sm font-bold text-[#0b0f19] shadow-[0_12px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:bg-blue-50"
               >
                 {buyNowLabel}
               </Link>
             ) : (
               <a
                 href="#shop-products"
-                className="mt-9 inline-flex h-12 items-center rounded-md bg-[#72f24e] px-6 text-sm font-bold text-[#17320f] shadow-[0_12px_34px_rgba(114,242,78,0.18)] transition hover:bg-[#83ff63]"
+                className="mt-9 inline-flex h-12 items-center rounded-xl bg-white px-6 text-sm font-bold text-[#0b0f19] shadow-[0_12px_34px_rgba(0,0,0,0.18)] transition hover:-translate-y-0.5 hover:bg-blue-50"
               >
                 Browse products
               </a>
@@ -792,17 +792,17 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
 
       <section className="relative z-10 -mt-20 sm:-mt-24">
         <div className="mx-auto grid max-w-[1110px] gap-6 px-4 sm:px-6 lg:grid-cols-[minmax(0,2fr)_410px] xl:px-0">
-          <article className="relative rounded-lg bg-[#f4f5f9] px-6 py-6 shadow-[0_16px_34px_-30px_rgba(15,23,42,0.75)] ring-1 ring-slate-200/70 sm:px-7 sm:py-7 md:min-h-[205px]">
+          <article className="relative rounded-[24px] bg-white px-6 py-6 shadow-[0_16px_34px_-30px_rgba(15,23,42,0.5)] ring-1 ring-slate-200/70 sm:px-7 sm:py-7 md:min-h-[205px]">
             <div className="flex flex-col gap-4 md:pr-[170px]">
               <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
                 {avatarImage ? (
                   <img
                     src={avatarImage}
                     alt={shop.name || "Shop avatar"}
-                    className="h-[92px] w-[92px] shrink-0 rounded-full border-[3px] border-[#9f56f3] bg-white object-cover shadow-[0_10px_24px_-18px_rgba(15,23,42,0.75)] sm:h-[96px] sm:w-[96px]"
+                    className="h-[92px] w-[92px] shrink-0 rounded-full border-[3px] border-blue-500 bg-white object-cover shadow-[0_10px_24px_-18px_rgba(15,23,42,0.75)] sm:h-[96px] sm:w-[96px]"
                   />
                 ) : (
-                  <div className="flex h-[92px] w-[92px] shrink-0 items-center justify-center rounded-full border-[3px] border-[#9f56f3] bg-[#a855f7] text-3xl font-black text-white shadow-[0_10px_24px_-18px_rgba(15,23,42,0.75)] sm:h-[96px] sm:w-[96px]">
+                  <div className="flex h-[92px] w-[92px] shrink-0 items-center justify-center rounded-full border-[3px] border-blue-500 bg-blue-700 text-3xl font-black text-white shadow-[0_10px_24px_-18px_rgba(15,23,42,0.75)] sm:h-[96px] sm:w-[96px]">
                     {getShopInitial(shop.name)}
                   </div>
                 )}
@@ -864,7 +864,7 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
             </button>
           </article>
 
-          <aside className="rounded-lg bg-[#f4f5f9] px-6 py-6 shadow-[0_16px_34px_-30px_rgba(15,23,42,0.75)] ring-1 ring-slate-200/70 sm:px-7 sm:py-7 md:min-h-[205px]">
+          <aside className="rounded-[24px] bg-white px-6 py-6 shadow-[0_16px_34px_-30px_rgba(15,23,42,0.5)] ring-1 ring-slate-200/70 sm:px-7 sm:py-7 md:min-h-[205px]">
             <h2 className="text-[22px] font-semibold leading-7 text-slate-950">
               Shop Details
             </h2>
@@ -956,7 +956,7 @@ export default function ShopDetails({ shopId }: { shopId: string }) {
 
         {activeTab === "Products" &&
           (shopProducts.length > 0 ? (
-            <div className="mt-5 rounded-md bg-[#e5e7ef] p-5 shadow-[0_12px_32px_-30px_rgba(15,23,42,0.7)]">
+            <div className="mt-5 rounded-2xl bg-slate-100 p-5 shadow-[0_12px_32px_-30px_rgba(15,23,42,0.7)]">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
                 {shopProducts.map((product, index) => (
                   <ProductCard

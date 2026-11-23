@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff } from "lucide-react";
+import AuthShell from "@/components/auth/AuthShell";
 
 type EmailForm = { email: string };
 type ResetForm = { password: string; confirmPassword: string };
@@ -145,31 +146,40 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="w-full py-10 min-h-[85vh] bg-[#f1f1f1]">
-      <h1 className="text-4xl font-semibold text-black text-center">Forgot Password</h1>
-      <p className="text-center text-lg font-medium py-3 text-[#00000099]">Forgot . Password</p>
-
-      <div className="w-full flex justify-center">
-        <div className="md:w-[480px] p-8 bg-white shadow rounded-lg">
-
-          {step === "email" && (
+    <AuthShell
+      eyebrow="ACCOUNT RECOVERY"
+      title={
+        step === "email"
+          ? "Reset your password"
+          : step === "otp"
+            ? "Verify your email"
+            : "Choose a new password"
+      }
+      description="We’ll help you securely regain access to your ARJ GROUP account."
+    >
+      {step === "email" && (
             <>
-              <h3 className="text-3xl font-semibold text-center mb-2">Forgot Password</h3>
-              <p className="text-center text-gray-500 mb-4">
-                Go back to?{" "}
-                <Link href="/login" style={{ color: "#3b82f6" }} className="font-medium">Login</Link>
+              <p className="mb-5 text-center text-sm text-slate-500">
+                Remembered your password?{" "}
+                <Link
+                  href="/login"
+                  className="font-bold text-slate-900 underline decoration-[#2563eb] underline-offset-4 transition-colors hover:text-[#1d4ed8]"
+                >
+                  Sign in
+                </Link>
               </p>
 
               {serverError && (
-                <p className="text-red-500 text-sm text-center mb-3">{serverError}</p>
+                <p role="alert" className="mb-4 text-center text-sm font-medium text-rose-600">{serverError}</p>
               )}
 
-              <form onSubmit={emailForm.handleSubmit(onEmailSubmit)}>
-                <label className="block text-gray-700 mt-3 mb-1">Email</label>
+              <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="auth-form space-y-3">
+                <label htmlFor="recovery-email" className="block text-sm font-semibold text-slate-700">Email address</label>
                 <input
+                  id="recovery-email"
                   type="email"
                   placeholder="support@example.com"
-                  className="w-full px-4 py-3 bg-blue-50 border border-blue-100 rounded-lg outline-none focus:border-blue-400 transition-colors text-gray-800 mb-1"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                   {...emailForm.register("email", {
                     required: "Email is required",
                     pattern: {
@@ -186,27 +196,26 @@ const ForgotPassword = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-black mt-4 text-white py-3 rounded-lg text-lg cursor-pointer hover:bg-gray-900 transition-colors disabled:opacity-60"
+                  className="mt-2 w-full rounded-2xl bg-[#0b0f19] py-3.5 text-sm font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? "Sending OTP..." : "Send OTP"}
                 </button>
               </form>
             </>
-          )}
+      )}
 
-          {step === "otp" && (
+      {step === "otp" && (
             <>
-              <h3 className="text-2xl font-semibold text-center mb-2">Verify Your Email</h3>
-              <p className="text-center text-gray-500 text-sm mb-6">
+              <p className="mb-6 text-center text-sm leading-6 text-slate-500">
                 We sent a 4-digit OTP to{" "}
                 <span className="font-medium text-gray-800">{userEmail}</span>
               </p>
 
               {serverError && (
-                <p className="text-red-500 text-sm text-center mb-3">{serverError}</p>
+                <p role="alert" className="mb-4 text-center text-sm font-medium text-rose-600">{serverError}</p>
               )}
 
-              <div className="flex justify-center gap-3 mb-5">
+              <div className="mb-6 flex justify-center gap-3">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
@@ -214,19 +223,20 @@ const ForgotPassword = () => {
                     type="text"
                     inputMode="numeric"
                     maxLength={1}
+                    aria-label={`OTP digit ${index + 1}`}
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    className="w-14 h-14 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg outline-none focus:border-blue-500 bg-blue-50 transition-colors"
+                    className="auth-otp-input size-14 text-center text-2xl font-bold text-slate-800"
                   />
                 ))}
               </div>
 
-              <div className="text-center mb-5 text-sm text-gray-500">
+              <div className="mb-5 text-center text-sm text-slate-500">
                 {timer > 0 ? (
-                  <span>Resend OTP in <span className="font-semibold text-gray-800">{timer}s</span></span>
+                  <span>Resend OTP in <span className="font-semibold text-slate-800">{timer}s</span></span>
                 ) : (
-                  <button onClick={resendOtp} className="font-medium hover:underline" style={{ color: "#3b82f6" }}>
+                  <button onClick={resendOtp} className="font-bold text-[#2563eb] underline-offset-4 hover:underline">
                     Resend OTP
                   </button>
                 )}
@@ -235,7 +245,7 @@ const ForgotPassword = () => {
               <button
                 onClick={verifyOtp}
                 disabled={loading}
-                className="w-full bg-black text-white py-3 rounded-lg text-lg cursor-pointer hover:bg-gray-900 transition-colors disabled:opacity-60"
+                className="w-full rounded-2xl bg-[#0b0f19] py-3.5 text-sm font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-[#2563eb] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? "Verifying..." : "Verify OTP"}
               </button>
@@ -243,32 +253,32 @@ const ForgotPassword = () => {
               <button
                 type="button"
                 onClick={() => { setStep("email"); setServerError(null); setOtp(["", "", "", ""]); }}
-                className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                className="mt-3 w-full rounded-xl py-3 text-sm font-semibold text-slate-500 transition-colors hover:text-slate-900"
               >
                 ← Back to forgot password
               </button>
             </>
-          )}
+      )}
 
-          {step === "reset" && (
+      {step === "reset" && (
             <>
-              <h3 className="text-2xl font-semibold text-center mb-2">Reset Password</h3>
-              <p className="text-center text-gray-500 text-sm mb-6">
+              <p className="mb-6 text-center text-sm leading-6 text-slate-500">
                 Enter a new password for{" "}
                 <span className="font-medium text-gray-800">{userEmail}</span>
               </p>
 
               {serverError && (
-                <p className="text-red-500 text-sm text-center mb-3">{serverError}</p>
+                <p role="alert" className="mb-4 text-center text-sm font-medium text-rose-600">{serverError}</p>
               )}
 
-              <form onSubmit={resetForm.handleSubmit(onResetSubmit)}>
-                <label className="block text-gray-700 mt-3 mb-1">New Password</label>
+              <form onSubmit={resetForm.handleSubmit(onResetSubmit)} className="auth-form space-y-3">
+                <label htmlFor="recovery-password" className="block text-sm font-semibold text-slate-700">New password</label>
                 <div className="relative">
                   <input
+                    id="recovery-password"
                     type={passwordVisible ? "text" : "password"}
                     placeholder="Min. 6 characters"
-                    className="w-full px-4 py-3 bg-blue-50 border border-blue-100 rounded-lg outline-none focus:border-blue-400 transition-colors text-gray-800 pr-12"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                     {...resetForm.register("password", {
                       required: "Password is required",
                       minLength: { value: 6, message: "Password must be at least 6 characters" },
@@ -277,9 +287,14 @@ const ForgotPassword = () => {
                   <button
                     type="button"
                     onClick={() => setPasswordVisible(!passwordVisible)}
-                    className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600"
+                    aria-label={passwordVisible ? "Hide password" : "Show password"}
+                    className="absolute inset-y-0 right-3 grid w-10 place-items-center rounded-xl text-slate-400 transition-all duration-200 hover:scale-105 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/50 active:scale-95"
                   >
-                    {passwordVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+                    {passwordVisible ? (
+                      <Eye className="rotate-12 scale-110 transition-transform duration-200" size={18} />
+                    ) : (
+                      <EyeOff className="transition-transform duration-200" size={18} />
+                    )}
                   </button>
                 </div>
                 {resetForm.formState.errors.password && (
@@ -288,12 +303,13 @@ const ForgotPassword = () => {
                   </p>
                 )}
 
-                <label className="block text-gray-700 mt-3 mb-1">Confirm Password</label>
+                <label htmlFor="recovery-confirm-password" className="block text-sm font-semibold text-slate-700">Confirm password</label>
                 <div className="relative">
                   <input
+                    id="recovery-confirm-password"
                     type={confirmPasswordVisible ? "text" : "password"}
                     placeholder="Repeat your password"
-                    className="w-full px-4 py-3 bg-blue-50 border border-blue-100 rounded-lg outline-none focus:border-blue-400 transition-colors text-gray-800 pr-12"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-12 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"
                     {...resetForm.register("confirmPassword", {
                       required: "Please confirm your password",
                     })}
@@ -301,9 +317,14 @@ const ForgotPassword = () => {
                   <button
                     type="button"
                     onClick={() => setConfirmPasswordVisible(!confirmPasswordVisible)}
-                    className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600"
+                    aria-label={confirmPasswordVisible ? "Hide password" : "Show password"}
+                    className="absolute inset-y-0 right-3 grid w-10 place-items-center rounded-xl text-slate-400 transition-all duration-200 hover:scale-105 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb]/50 active:scale-95"
                   >
-                    {confirmPasswordVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+                    {confirmPasswordVisible ? (
+                      <Eye className="rotate-12 scale-110 transition-transform duration-200" size={18} />
+                    ) : (
+                      <EyeOff className="transition-transform duration-200" size={18} />
+                    )}
                   </button>
                 </div>
                 {resetForm.formState.errors.confirmPassword && (
@@ -315,17 +336,14 @@ const ForgotPassword = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-black mt-5 text-white py-3 rounded-lg text-lg cursor-pointer hover:bg-gray-900 transition-colors disabled:opacity-60"
+                  className="mt-2 w-full rounded-2xl bg-[#0b0f19] py-3.5 text-sm font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? "Resetting..." : "Reset Password"}
                 </button>
               </form>
             </>
-          )}
-
-        </div>
-      </div>
-    </div>
+      )}
+    </AuthShell>
   );
 };
 

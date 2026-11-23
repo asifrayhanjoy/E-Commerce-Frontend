@@ -126,13 +126,16 @@ export default function ProductDetailsPage() {
     data: product,
     isLoading: isProductLoading,
     isError,
+    refetch: refetchProduct,
   } = useQuery({
     queryKey: [
       "product-details",
       selectedReference?.productId,
       selectedReference?.slug,
     ],
-    enabled: referenceReady,
+    enabled:
+      referenceReady &&
+      Boolean(selectedReference?.productId || selectedReference?.slug),
     queryFn: async () => {
       const params = new URLSearchParams();
 
@@ -140,6 +143,8 @@ export default function ProductDetailsPage() {
         params.set("productId", selectedReference.productId);
       } else if (selectedReference?.slug) {
         params.set("slug", selectedReference.slug);
+      } else {
+        throw new Error("A product reference is required.");
       }
 
       const query = params.toString();
@@ -150,6 +155,7 @@ export default function ProductDetailsPage() {
       return response.data.product;
     },
     staleTime: 1000 * 60 * 2,
+    retry: false,
   });
 
   const { data: suggestedProducts = [] } = useQuery({
@@ -221,29 +227,52 @@ export default function ProductDetailsPage() {
 
   if (!referenceReady || isProductLoading) {
     return (
-      <main className="bg-[#f6f7fb] py-8">
-        <section className="mx-auto h-[520px] w-[80%] animate-pulse bg-white" />
+      <main className="bg-[#fafafa] py-8">
+        <section className="mx-auto h-[520px] w-[92%] max-w-7xl animate-pulse rounded-[28px] bg-white" />
       </main>
     );
   }
 
   if (isError || !product) {
+    const hasProductReference = Boolean(
+      selectedReference?.productId || selectedReference?.slug
+    );
+
     return (
-      <main className="bg-[#f6f7fb] py-8">
-        <section className="mx-auto flex min-h-[360px] w-[80%] items-center justify-center bg-white px-6 text-center">
+      <main className="bg-[#fafafa] py-8">
+        <section className="mx-auto flex min-h-[360px] w-[92%] max-w-7xl items-center justify-center rounded-[28px] bg-white px-6 text-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-950">
-              Product not found
+              {isError
+                ? "Product details unavailable"
+                : hasProductReference
+                  ? "Product not found"
+                  : "Choose a product to view details"}
             </h1>
             <p className="mt-2 text-sm font-medium text-slate-500">
-              Please select another product from the shop.
+              {isError
+                ? "We couldn’t load this product right now. Please try again."
+                : hasProductReference
+                  ? "Please select another product from the catalog."
+                  : "Browse the catalog and select a product to see its details."}
             </p>
-            <Link
-              href="/"
-              className="mt-5 inline-flex rounded bg-slate-950 px-4 py-2 text-sm font-semibold text-white"
-            >
-              Continue Shopping
-            </Link>
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
+              {isError && (
+                <button
+                  type="button"
+                  onClick={() => void refetchProduct()}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl bg-sky-400 px-4 text-sm font-bold text-slate-950 transition hover:bg-sky-300"
+                >
+                  Try again
+                </button>
+              )}
+              <Link
+                href="/products"
+                className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-slate-950 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+              >
+                Browse products
+              </Link>
+            </div>
           </div>
         </section>
       </main>
@@ -261,8 +290,7 @@ export default function ProductDetailsPage() {
   const hasShop = Boolean(shopName || shopId);
   const shopRating = Number(shop?.ratings || 0);
   const brand = product?.brand || "No Brand";
-  const sizes = toList(product?.sizes);
-  const availableSizes = sizes.length > 0 ? sizes : ["XS"];
+  const availableSizes = toList(product?.sizes);
   const salePrice = Number(product?.sale_price ?? product?.price ?? 0);
   const regularPrice = Number(product?.regular_price ?? 0);
   const discountPercent = getDiscountPercent(regularPrice, salePrice);
@@ -326,12 +354,12 @@ export default function ProductDetailsPage() {
   };
 
   return (
-    <main className="bg-[#f6f7fb]">
-      <section className="mx-auto w-[80%] py-8">
-        <div className="grid min-h-[520px] grid-cols-[31%_44%_25%] bg-white px-5 py-8 shadow-[0_12px_28px_-26px_rgba(15,23,42,0.5)]">
-          <div className="flex flex-col justify-between pr-8">
+    <main className="bg-[#fafafa]">
+      <section className="mx-auto w-[92%] max-w-[1440px] py-8 lg:py-12">
+        <div className="grid min-h-[520px] gap-6 rounded-[28px] border border-slate-200/80 bg-white p-5 shadow-[0_24px_70px_rgba(15,23,42,0.06)] md:p-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.15fr)_300px]">
+          <div className="flex min-w-0 flex-col justify-between lg:pr-2">
             <div
-              className="relative flex min-h-[360px] cursor-crosshair items-center justify-center overflow-hidden bg-slate-100"
+              className="relative flex min-h-[360px] cursor-crosshair items-center justify-center overflow-hidden rounded-[24px] bg-[#f5f7fb]"
               onMouseEnter={() => setIsZooming(true)}
               onMouseLeave={() => setIsZooming(false)}
               onMouseMove={handleImageMouseMove}
@@ -382,7 +410,7 @@ export default function ProductDetailsPage() {
             </div>
           </div>
 
-          <div className="relative py-6 pr-10">
+          <div className="relative py-2 lg:px-3 lg:py-6">
             {isZooming ? (
               <div
                 className="h-full min-h-[460px] border border-slate-100 bg-white bg-no-repeat"
@@ -394,7 +422,7 @@ export default function ProductDetailsPage() {
               />
             ) : (
               <>
-                <h1 className="text-2xl font-bold text-slate-950">
+                <h1 className="text-3xl font-bold tracking-tight text-slate-950">
                   {productTitle}
                 </h1>
 
@@ -410,11 +438,11 @@ export default function ProductDetailsPage() {
                 </p>
 
                 <div className="mt-5 border-t border-slate-100 pt-5">
-                  <div className="text-4xl font-black text-orange-600">
+                  <div className="text-4xl font-black tabular-nums tracking-tight text-slate-950">
                     {formatPrice(salePrice)}
                   </div>
                   {regularPrice > 0 && (
-                    <div className="mt-2 flex items-center gap-2 text-xl font-bold text-slate-500">
+                    <div className="mt-2 flex items-center gap-2 text-base font-semibold tabular-nums text-slate-400">
                       <span className="line-through">
                         {formatPrice(regularPrice)}
                       </span>
@@ -425,20 +453,23 @@ export default function ProductDetailsPage() {
                   )}
                 </div>
 
-                <div className="mt-6 border-t border-slate-100 pt-5">
-                  <h2 className="text-base font-bold text-slate-950">Size:</h2>
-                  <div className="mt-3 flex flex-wrap gap-3">
-                    {availableSizes.map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        className="rounded-md bg-slate-900 px-4 py-2 text-sm font-bold text-white"
-                      >
-                        {size}
-                      </button>
-                    ))}
+                {availableSizes.length > 0 && (
+                  <div className="mt-6 border-t border-slate-100 pt-5">
+                    <h2 className="text-sm font-bold text-slate-300">
+                      Available sizes
+                    </h2>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {availableSizes.map((size) => (
+                        <span
+                          key={size}
+                          className="rounded-lg border border-white/10 bg-[#111827] px-3 py-2 text-sm font-semibold text-slate-200"
+                        >
+                          {size}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="mt-6 flex flex-wrap items-center gap-4">
                   <div className="flex h-10 overflow-hidden rounded-md bg-slate-100">
@@ -474,7 +505,7 @@ export default function ProductDetailsPage() {
 
                 <button
                   type="button"
-                  className="mt-6 inline-flex h-12 items-center gap-3 rounded-md bg-orange-600 px-7 text-base font-bold text-white transition hover:bg-orange-700"
+                  className="mt-6 inline-flex h-12 items-center gap-3 rounded-xl bg-[#0b0f19] px-7 text-base font-bold text-white transition hover:-translate-y-0.5 hover:bg-blue-700"
                   onClick={handleAddToCart}
                 >
                   <ShoppingBag size={22} />
@@ -491,7 +522,7 @@ export default function ProductDetailsPage() {
             )}
           </div>
 
-          <aside className="border-l border-slate-100 px-6 py-6">
+          <aside className="rounded-2xl bg-slate-50/80 p-4 sm:p-5 lg:border-l lg:border-slate-100 lg:bg-white">
             <div className="flex items-center justify-end gap-3">
               {hasShop && (
                 <button
@@ -524,7 +555,7 @@ export default function ProductDetailsPage() {
               )}
 
               {shopAddress && (
-                <section className="rounded-md border border-slate-100 bg-slate-50/60 p-4">
+                <section className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
                   <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
                     Delivery Option
                   </h2>
@@ -538,7 +569,7 @@ export default function ProductDetailsPage() {
                 </section>
               )}
 
-              <section className="rounded-md border border-slate-100 bg-white p-4">
+              <section className="rounded-2xl border border-slate-100 bg-white p-4">
                 <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
                   Return & Warranty
                 </h2>
@@ -553,7 +584,7 @@ export default function ProductDetailsPage() {
               </section>
 
               {hasShop && (
-                <section className="rounded-md border border-slate-100 bg-white p-4">
+                <section className="rounded-2xl border border-slate-100 bg-white p-4">
                   <p className="text-sm font-bold uppercase tracking-wide text-slate-500">
                     Sold by
                   </p>
@@ -579,7 +610,7 @@ export default function ProductDetailsPage() {
                   {shopId && (
                     <Link
                       href={`/shops/${encodeURIComponent(shopId)}`}
-                      className="mt-5 flex h-11 items-center justify-center gap-2 rounded-md border border-blue-100 bg-blue-50 text-sm font-black uppercase text-blue-600 transition hover:bg-blue-100"
+                      className="mt-5 flex h-11 items-center justify-center gap-2 rounded-xl border border-blue-100 bg-blue-50 text-sm font-black uppercase text-blue-700 transition hover:bg-blue-100"
                     >
                       <Store size={18} />
                       Go To Store
@@ -593,7 +624,7 @@ export default function ProductDetailsPage() {
       </section>
 
       <div className="mx-auto mt-5 w-[90%] lg:w-[80%]">
-        <div className="h-full min-h-[60vh] bg-white p-5">
+        <div className="h-full min-h-[40vh] rounded-[24px] border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
           <h3 className="text-lg font-semibold">
             Product details of {productTitle}
           </h3>
@@ -607,7 +638,7 @@ export default function ProductDetailsPage() {
       </div>
 
       <div className="mx-auto mt-5 w-[90%] lg:w-[80%]">
-        <div className="h-full min-h-[60vh] bg-white p-5">
+        <div className="h-full min-h-[30vh] rounded-[24px] border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
           <h3 className="text-lg font-semibold">
             Ratings & Reviews of {productTitle}
           </h3>

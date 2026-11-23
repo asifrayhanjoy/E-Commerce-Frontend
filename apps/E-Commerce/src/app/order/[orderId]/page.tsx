@@ -62,6 +62,10 @@ type UserOrder = {
   itemCount?: number;
   totalAmount?: number;
   paymentStatus?: string;
+  paymentMethod?: string;
+  gatewayTransactionId?: string;
+  senderAccountNumber?: string;
+  paymentProofUrl?: string;
   deliveryStatus?: string;
   paymentIntentId?: string | null;
   paymentSessionId?: string | null;
@@ -238,8 +242,8 @@ export default function UserOrderDetailsPage() {
 
   if (!isUserLoading && !user) {
     return (
-      <main className="min-h-[70vh] bg-gray-50 p-6">
-        <section className="mx-auto flex min-h-[320px] max-w-3xl items-center justify-center rounded-md bg-white text-center shadow-sm">
+      <main className="min-h-[70vh] bg-[#fafafa] p-6">
+        <section className="mx-auto flex min-h-[320px] max-w-3xl items-center justify-center rounded-[28px] border border-slate-200/80 bg-white text-center shadow-sm">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">My Account</h1>
             <p className="mt-2 text-sm font-semibold text-gray-500">
@@ -258,23 +262,26 @@ export default function UserOrderDetailsPage() {
   }
 
   return (
-    <main className="bg-gray-50 p-6 pb-14">
-      <div className="mx-auto max-w-[1488px]">
-        <div className="mb-[54px] text-center text-2xl font-bold">
-          <h1 className="text-[32px] font-bold leading-none text-gray-800">
+    <main className="min-h-screen bg-[#fafafa] p-4 pb-14 sm:p-6">
+      <div className="mx-auto max-w-[1440px]">
+        <div className="mb-9 text-left">
+          <p className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.2em] text-blue-700">
+            Your ARJ account
+          </p>
+          <h1 className="text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-4xl">
             Welcome back,{" "}
-            <span className="text-blue-600">
+            <span             className="text-blue-700">
               {isUserLoading ? "User" : user?.name || "User"}
             </span>{" "}
             👋
           </h1>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {stats.map(({ title, count, Icon }) => (
             <div
               key={title}
-              className="flex min-h-[104px] items-center justify-between rounded bg-white px-6 py-6 shadow-sm"
+              className="flex min-h-[104px] items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-6 py-6 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.5)]"
             >
               <div>
                 <p className="text-sm font-medium text-gray-400">{title}</p>
@@ -286,15 +293,15 @@ export default function UserOrderDetailsPage() {
               <Icon
                 size={44}
                 strokeWidth={1.8}
-                className="text-blue-500"
+                className="text-blue-600"
                 aria-hidden="true"
               />
             </div>
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col gap-7 md:flex-row">
-          <aside className="w-full rounded-md border border-gray-100 bg-white p-5 shadow-md md:w-[300px]">
+        <div className="mt-7 grid items-start gap-6 lg:grid-cols-[250px_minmax(0,1fr)] 2xl:grid-cols-[250px_minmax(0,1fr)_250px]">
+          <aside className="w-full rounded-[24px] border border-slate-200/80 bg-white p-4 shadow-sm">
             <nav className="space-y-2">
               <NavItem href="/profile?active=Profile" label="Profile" Icon={User} />
               <NavItem
@@ -323,7 +330,7 @@ export default function UserOrderDetailsPage() {
             </nav>
           </aside>
 
-          <section className="min-h-[520px] w-full rounded bg-white px-7 py-8 shadow-[0_2px_10px_rgba(15,23,42,0.12)] md:w-[820px] md:flex-none">
+          <section className="min-h-[520px] min-w-0 rounded-[24px] border border-slate-200/80 bg-white px-5 py-6 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.4)] sm:px-7 sm:py-8">
             {isOrderLoading ? (
               <div className="flex h-[420px] items-center justify-center text-[17px] font-semibold text-gray-700">
                 Loading order details...
@@ -548,7 +555,7 @@ export default function UserOrderDetailsPage() {
             )}
           </section>
 
-          <aside className="w-full space-y-4 md:w-1/4">
+          <aside className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-1">
             <QuickActionCard
               Icon={Gift}
               title="Referral Program"

@@ -145,8 +145,8 @@ const fetchMessages = async (conversationId: string) => {
 };
 
 const InboxFallback = () => (
-  <main className="min-h-[75vh] bg-[#f6f7fb] px-4 py-8">
-    <section className="mx-auto h-[720px] max-w-7xl rounded-md bg-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]" />
+  <main className="min-h-[75vh] bg-[#fafafa] px-4 py-8">
+    <section className="mx-auto h-[720px] max-w-7xl rounded-[28px] border border-slate-200/80 bg-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]" />
   </main>
 );
 
@@ -322,8 +322,8 @@ function CustomerInboxContent() {
 
   if (!isUserLoading && !user) {
     return (
-      <main className="min-h-[70vh] bg-[#f6f7fb] px-6 py-12">
-        <div className="mx-auto flex min-h-[320px] max-w-3xl items-center justify-center rounded-md bg-white text-center">
+      <main className="min-h-[70vh] bg-[#fafafa] px-6 py-12">
+        <div className="mx-auto flex min-h-[320px] max-w-3xl items-center justify-center rounded-[28px] border border-slate-200/80 bg-white text-center">
           <div>
             <h1 className="text-2xl font-black text-slate-950">Inbox</h1>
             <p className="mt-2 text-sm font-semibold text-slate-500">
@@ -342,9 +342,9 @@ function CustomerInboxContent() {
   }
 
   return (
-    <main className="min-h-[75vh] overflow-hidden bg-[#f6f7fb] px-4 py-8">
-      <section className="mx-auto grid h-[720px] min-h-0 max-w-7xl grid-cols-[360px_1fr] overflow-hidden rounded-md bg-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)]">
-        <aside className="flex min-h-0 flex-col border-r border-slate-100 bg-slate-50">
+    <main className="min-h-[75vh] overflow-hidden bg-[#fafafa] px-4 py-8">
+      <section className="mx-auto grid h-[720px] min-h-0 max-w-7xl grid-cols-1 grid-rows-[260px_minmax(0,1fr)] overflow-hidden rounded-[28px] border border-slate-200/80 bg-white shadow-[0_18px_40px_-28px_rgba(15,23,42,0.45)] md:grid-cols-[320px_1fr] md:grid-rows-1">
+        <aside className="flex min-h-0 flex-col border-b border-slate-100 bg-slate-50 md:border-b-0 md:border-r">
           <div className="shrink-0 border-b border-slate-100 px-5 py-5">
             <h1 className="text-2xl font-black text-slate-950">Inbox</h1>
           </div>
@@ -380,7 +380,7 @@ function CustomerInboxContent() {
                   key={conversation.id}
                   type="button"
                   className={`flex w-full gap-3 border-b border-slate-100 px-4 py-4 text-left transition ${
-                    isSelected ? "bg-white" : "hover:bg-white"
+                    isSelected                     ? "bg-white shadow-[inset_3px_0_0_#2563eb]" : "hover:bg-white"
                   }`}
                   onClick={() => setSelectedConversationId(conversation.id)}
                 >
@@ -461,7 +461,7 @@ function CustomerInboxContent() {
                         <div
                           className={`max-w-[68%] rounded-2xl px-4 py-3 text-sm font-semibold leading-6 ${
                             isMine
-                              ? "rounded-br-sm bg-blue-600 text-white"
+                                ? "rounded-br-sm bg-[#0b0f19] text-white"
                               : "rounded-bl-sm bg-white text-slate-700 shadow-sm"
                           }`}
                         >
@@ -494,11 +494,11 @@ function CustomerInboxContent() {
                     value={messageText}
                     onChange={(event) => setMessageText(event.target.value)}
                     placeholder="Write a message"
-                    className="h-12 min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-5 text-sm font-semibold text-slate-700 outline-none focus:border-blue-400"
+                    className="h-12 min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-5 text-sm font-semibold text-slate-700 outline-none transition focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
                   />
                   <button
                     type="submit"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white transition hover:bg-blue-700"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#0b0f19] text-white transition hover:bg-blue-700"
                     aria-label="Send message"
                   >
                     <Send size={20} />

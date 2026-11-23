@@ -105,16 +105,16 @@ export default function WishlistPage() {
 
   if (isLoading) {
     return (
-      <main className="mx-auto w-[80%] py-16">
-        <div className="h-[320px] animate-pulse rounded bg-slate-100" />
+      <main className="min-h-[70vh] bg-[#fafafa] px-4 py-12">
+        <div className="mx-auto h-[320px] max-w-7xl animate-pulse rounded-[28px] bg-white" />
       </main>
     );
   }
 
   if (!user) {
     return (
-      <main className="mx-auto w-[80%] py-16">
-        <div className="flex min-h-[320px] items-center justify-center border border-dashed border-slate-300 bg-white px-6 text-center">
+      <main className="min-h-[70vh] bg-[#fafafa] px-4 py-12">
+        <div className="mx-auto flex min-h-[320px] max-w-3xl items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white px-6 text-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-950">
               Sign in to view your wishlist
@@ -135,27 +135,28 @@ export default function WishlistPage() {
   }
 
   return (
-    <main className="mx-auto w-[80%] py-16">
-      <section className="mb-16">
-        <h1 className="text-[42px] font-semibold leading-tight text-black">
+    <main className="min-h-screen bg-[#fafafa] px-4 py-10 sm:px-6 lg:py-14">
+      <div className="mx-auto max-w-[1280px]">
+      <section className="mb-8">
+        <h1 className="text-4xl font-bold tracking-tight text-slate-950">
           Wishlist
         </h1>
-        <p className="mt-5 text-lg font-medium text-slate-500">
+        <p className="mt-3 text-sm font-medium text-slate-500">
           Home . Wishlist
         </p>
       </section>
 
       {wishlistItems.length > 0 ? (
         <section className="w-full overflow-x-auto">
-          <div className="min-w-[900px]">
-            <div className="grid grid-cols-[2fr_1.45fr_1.3fr_2fr] bg-slate-100 px-6 py-5 text-lg font-bold text-slate-950">
+          <div className="min-w-0 overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_20px_50px_-32px_rgba(15,23,42,0.28)]">
+            <div className="hidden grid-cols-[2fr_1.45fr_1.3fr_2fr] bg-slate-50 px-6 py-5 text-xs font-bold uppercase tracking-[0.12em] text-slate-600 sm:grid">
               <div>Product</div>
               <div>Price</div>
               <div>Quantity</div>
               <div>Action</div>
             </div>
 
-            <div className="divide-y divide-slate-100 bg-white">
+            <div className="divide-y divide-slate-100">
               {wishlistItems.map((product) => {
                 const productKey = getProductKey(product) || product.title;
                 const quantity = productKey
@@ -172,13 +173,13 @@ export default function WishlistPage() {
                 return (
                   <div
                     key={productKey}
-                    className="grid min-h-[130px] grid-cols-[2fr_1.45fr_1.3fr_2fr] items-center px-6 py-8"
+                    className="grid min-h-[130px] grid-cols-1 items-center gap-4 px-5 py-5 transition-colors hover:bg-slate-50/70 sm:grid-cols-[2fr_1.45fr_1.3fr_2fr] sm:px-6"
                   >
-                    <div className="flex items-center gap-8">
+                    <div className="flex min-w-0 items-center gap-4 sm:gap-6">
                       <Link
                         href={PRODUCT_DETAILS_PATH}
                         onClick={() => saveSelectedProductDetails(product)}
-                        className="h-[76px] w-[76px] shrink-0 overflow-hidden rounded bg-white"
+                        className="h-[76px] w-[76px] shrink-0 overflow-hidden rounded-2xl bg-slate-50"
                       >
                         <img
                           src={imageUrl}
@@ -191,17 +192,23 @@ export default function WishlistPage() {
                       <Link
                         href={PRODUCT_DETAILS_PATH}
                         onClick={() => saveSelectedProductDetails(product)}
-                        className="text-lg font-medium text-slate-950"
+                        className="line-clamp-2 text-base font-semibold text-slate-950 transition-colors hover:text-blue-700 sm:text-lg"
                       >
                         {productTitle}
                       </Link>
                     </div>
 
-                    <div className="text-lg font-medium text-slate-950">
+                    <div className="text-base font-semibold tabular-nums text-slate-950 sm:text-lg">
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:hidden">
+                        Price
+                      </p>
                       {formatPrice(getProductPrice(product))}
                     </div>
 
                     <div>
+                      <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 sm:hidden">
+                        Quantity
+                      </p>
                       <div className="inline-flex h-10 items-center overflow-hidden rounded-full border border-slate-200 bg-white shadow-sm">
                         <button
                           type="button"
@@ -225,10 +232,10 @@ export default function WishlistPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-24">
+                    <div className="flex flex-wrap items-center gap-4 sm:gap-5">
                       <button
                         type="button"
-                        className="h-11 rounded bg-blue-500 px-7 text-base font-semibold text-white transition hover:bg-blue-600"
+                        className="h-11 rounded-xl bg-[#0b0f19] px-7 text-sm font-bold text-white transition hover:bg-blue-700"
                         onClick={() => handleAddToCart(product)}
                       >
                         {isAdded ? "Added" : "Add To Cart"}
@@ -250,7 +257,7 @@ export default function WishlistPage() {
           </div>
         </section>
       ) : (
-        <div className="flex min-h-[280px] items-center justify-center border border-dashed border-slate-300 bg-white px-6 text-center">
+        <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white px-6 text-center">
           <div>
             <h2 className="text-xl font-semibold text-slate-950">
               Your wishlist is empty
@@ -267,6 +274,7 @@ export default function WishlistPage() {
           </div>
         </div>
       )}
+      </div>
     </main>
   );
 }

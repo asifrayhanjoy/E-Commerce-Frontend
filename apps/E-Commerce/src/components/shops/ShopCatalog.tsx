@@ -117,12 +117,12 @@ const ShopGridSkeleton = () => (
   <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-3">
     {Array.from({ length: 6 }).map((_, index) => (
       <div key={index} className="overflow-hidden rounded bg-white shadow-sm">
-        <div className="h-[150px] animate-pulse bg-slate-100" />
+        <div className="skeleton-shimmer h-[150px] rounded-t-3xl" />
         <div className="flex flex-col items-center p-6">
-          <div className="-mt-14 h-20 w-20 animate-pulse rounded-full border-4 border-white bg-slate-100" />
-          <div className="mt-5 h-5 w-36 animate-pulse rounded bg-slate-100" />
-          <div className="mt-3 h-4 w-24 animate-pulse rounded bg-slate-100" />
-          <div className="mt-7 h-4 w-full animate-pulse rounded bg-slate-100" />
+          <div className="skeleton-shimmer -mt-14 h-20 w-20 rounded-full border-4 border-white" />
+          <div className="skeleton-shimmer mt-5 h-5 w-36 rounded" />
+          <div className="skeleton-shimmer mt-3 h-4 w-24 rounded" />
+          <div className="skeleton-shimmer mt-7 h-4 w-full rounded" />
         </div>
       </div>
     ))}
@@ -130,7 +130,7 @@ const ShopGridSkeleton = () => (
 );
 
 const FilterHeading = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="border-b border-slate-200 pb-3 text-[30px] font-bold leading-tight text-slate-950">
+  <h2 className="relative border-b border-slate-100 pb-3 text-lg font-bold leading-tight tracking-tight text-slate-950 after:absolute after:bottom-0 after:left-0 after:h-px after:w-14 after:bg-blue-600">
     {children}
   </h2>
 );
@@ -146,43 +146,43 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
   const ratingLabel = rating > 0 ? rating.toFixed(1) : "N/A";
 
   return (
-    <article className="overflow-hidden rounded-[3px] bg-white text-center shadow-[0_16px_34px_-28px_rgba(15,23,42,0.65)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_42px_-28px_rgba(15,23,42,0.75)]">
-      <div className="relative h-[142px] bg-slate-100">
+    <article className="group overflow-hidden rounded-[24px] border border-slate-200/80 bg-white text-center shadow-[0_16px_34px_-28px_rgba(15,23,42,0.55)] transition duration-500 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_46px_-26px_rgba(15,23,42,0.36)]">
+      <div className="image-zoom relative h-[160px] overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,#ffffff_0%,#eff6ff_100%)]">
         {coverImage && (
           <img
             src={coverImage}
             alt={shop.name || "Shop cover"}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
         )}
       </div>
 
-      <div className="flex min-h-[268px] flex-col items-center px-7 pb-7">
+      <div className="flex min-h-[278px] flex-col items-center px-6 pb-7">
         {avatarImage ? (
           <img
             src={avatarImage}
             alt={shop.name || "Shop avatar"}
-            className="-mt-12 h-24 w-24 rounded-full border-4 border-white bg-white object-cover shadow-[0_10px_28px_-16px_rgba(15,23,42,0.65)]"
+            className="-mt-12 h-24 w-24 rounded-full border-4 border-white bg-white object-cover shadow-[0_10px_28px_-16px_rgba(15,23,42,0.65)] transition duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="-mt-12 flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-blue-50 text-3xl font-black text-blue-700 shadow-[0_10px_28px_-16px_rgba(15,23,42,0.65)]">
+          <div className="-mt-12 flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-slate-950 to-blue-700 text-3xl font-black text-white shadow-[0_10px_28px_-16px_rgba(15,23,42,0.65)] transition duration-300 group-hover:scale-105">
             {shop.name?.trim()?.charAt(0)?.toUpperCase() || "S"}
           </div>
         )}
 
         {shop.name && (
-          <h3 className="mt-5 max-w-full truncate text-[22px] font-bold leading-tight text-slate-950">
+          <h3 className="mt-5 max-w-full truncate text-xl font-bold leading-tight tracking-tight text-slate-950 transition-colors duration-200 group-hover:text-blue-700">
             {shop.name}
           </h3>
         )}
         {followerCount !== undefined && (
-          <p className="mt-2 text-base font-semibold text-slate-500">
+          <p className="mt-2 text-sm font-medium text-slate-500">
             {followerCount} Followers
           </p>
         )}
 
         <div
-          className={`mt-6 grid w-full items-center gap-4 text-[15px] font-bold text-slate-500 ${
+          className={`mt-6 grid w-full items-center gap-4 text-sm font-semibold text-slate-500 ${
             address ? "grid-cols-[minmax(0,1fr)_auto]" : "grid-cols-1"
           }`}
         >
@@ -201,14 +201,14 @@ const ShopCard = ({ shop }: { shop: Shop }) => {
         </div>
 
         {category && (
-          <span className="mt-5 rounded-md bg-blue-50 px-4 py-2 text-base font-bold text-blue-700">
+          <span className="mt-5 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-blue-700">
             {category}
           </span>
         )}
 
         <Link
           href={shopId ? `/shop/${encodeURIComponent(shopId)}` : "/shops"}
-          className="mt-8 inline-flex items-center gap-2 text-lg font-bold text-slate-700 underline underline-offset-4 transition hover:text-blue-700"
+          className="cta-shine mt-8 inline-flex items-center gap-2 rounded-full bg-[#0b0f19] px-5 py-3 text-sm font-bold text-white transition duration-300 hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-lg focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/25"
         >
           Visit Shop
           <ExternalLink size={19} strokeWidth={2.5} aria-hidden="true" />
@@ -281,12 +281,12 @@ export default function ShopCatalog({
   };
 
   return (
-    <main className="min-h-screen bg-[#f7f6f6] text-slate-950">
-      <div className="mx-auto w-[90%] max-w-[1500px] py-9 lg:w-[80%]">
-        <h1 className="text-5xl font-black leading-tight text-slate-950 md:text-6xl">
+    <main className="min-h-screen bg-[#fafafa] text-slate-950">
+      <div className="mx-auto w-[92%] max-w-[1440px] py-10 lg:py-14">
+        <h1 className="text-4xl font-extrabold leading-tight tracking-[-0.04em] text-slate-950 md:text-6xl">
           All Shops
         </h1>
-        <div className="mb-14 mt-5 text-lg font-semibold text-slate-600">
+        <div className="mb-10 mt-4 text-sm font-semibold text-slate-500">
           <Link href="/" className="transition hover:text-blue-700">
             Home
           </Link>
@@ -300,8 +300,8 @@ export default function ShopCatalog({
           )}
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)]">
-          <aside className="h-fit bg-white p-6 shadow-sm">
+        <div className="grid gap-7 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="h-fit rounded-[24px] border border-slate-200/80 bg-white p-6 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.5)] lg:sticky lg:top-32">
             <div>
               <FilterHeading>Categories</FilterHeading>
               <div className="mt-5 space-y-3">
@@ -315,7 +315,7 @@ export default function ShopCatalog({
                   : categoryOptions.map((category) => (
                       <label
                         key={category}
-                        className="flex cursor-pointer items-center gap-3 text-lg font-semibold lowercase text-slate-600"
+                        className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-600"
                       >
                         <input
                           type="checkbox"
@@ -354,7 +354,7 @@ export default function ShopCatalog({
             {isLoading && <ShopGridSkeleton />}
 
             {!isLoading && isError && (
-              <div className="flex min-h-[360px] items-center justify-center bg-white px-6 text-center shadow-sm">
+              <div className="flex min-h-[360px] items-center justify-center rounded-[28px] border border-slate-200/80 bg-white px-6 text-center shadow-sm">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-950">
                     Shops could not load
@@ -365,7 +365,7 @@ export default function ShopCatalog({
                   </p>
                   <button
                     type="button"
-                    className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-blue-700 px-5 text-sm font-bold text-white transition hover:bg-blue-800"
+                    className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0b0f19] px-5 text-sm font-bold text-white transition hover:bg-blue-700"
                     onClick={() => refetch()}
                   >
                     <RefreshCw size={17} />
@@ -376,7 +376,7 @@ export default function ShopCatalog({
             )}
 
             {!isLoading && !isError && filteredShops.length === 0 && (
-              <div className="flex min-h-[360px] items-center justify-center bg-white px-6 text-center shadow-sm">
+              <div className="flex min-h-[360px] items-center justify-center rounded-[28px] border border-slate-200/80 bg-white px-6 text-center shadow-sm">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-950">
                     {shops.length === 0 ? "No shops available" : "No shops found"}

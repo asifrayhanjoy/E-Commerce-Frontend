@@ -13,7 +13,6 @@ import {
   Save,
   Shield,
   Trash2,
-  WalletCards,
   X,
 } from "lucide-react";
 import axiosInstance from "@/utils/axiosInstance";
@@ -28,15 +27,9 @@ type SellerSettings = {
     app: boolean;
   };
   customDomains: string[];
-  withdrawMethod: {
-    type?: string;
-    accountName?: string;
-    accountNumber?: string;
-    bankName?: string;
-  } | null;
 };
 
-type ActiveTab = "general" | "domains" | "withdraw";
+type ActiveTab = "general" | "domains";
 type ActiveDialog = "threshold" | "notifications" | "delete" | null;
 
 const defaultSettings: SellerSettings = {
@@ -47,13 +40,14 @@ const defaultSettings: SellerSettings = {
     app: true,
   },
   customDomains: [],
-  withdrawMethod: null,
 };
 
 const fetchSellerSettings = async () => {
   const response = await axiosInstance.get("/api/v1/auth/seller-settings");
 
-  return (response.data?.settings || defaultSettings) as SellerSettings;
+  const safeSettings = { ...(response.data?.settings || defaultSettings) };
+  delete safeSettings.withdrawMethod;
+  return safeSettings as SellerSettings;
 };
 
 const updateSellerSettings = async (payload: Partial<SellerSettings>) => {
@@ -82,12 +76,6 @@ function SettingsPage() {
     app: true,
   });
   const [domainInput, setDomainInput] = useState("");
-  const [withdrawMethod, setWithdrawMethod] = useState({
-    type: "Bank Transfer",
-    accountName: "",
-    accountNumber: "",
-    bankName: "",
-  });
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   const {
@@ -119,19 +107,12 @@ function SettingsPage() {
   useEffect(() => {
     setThreshold(String(settings.lowStockAlertThreshold));
     setNotifications(settings.notificationPreferences);
-    setWithdrawMethod({
-      type: settings.withdrawMethod?.type || "Bank Transfer",
-      accountName: settings.withdrawMethod?.accountName || "",
-      accountNumber: settings.withdrawMethod?.accountNumber || "",
-      bankName: settings.withdrawMethod?.bankName || "",
-    });
     setDomainInput(settings.customDomains.join(", "));
   }, [settings]);
 
   const tabs = [
     { id: "general" as const, label: "General" },
     { id: "domains" as const, label: "Custom Domains" },
-    { id: "withdraw" as const, label: "Withdraw Method" },
   ];
   const shopName = seller?.shop?.name || "";
   const isDeleteConfirmationValid =
@@ -160,12 +141,6 @@ function SettingsPage() {
   const saveDomains = () => {
     updateSettingsMutation.mutate({
       customDomains: domainList,
-    });
-  };
-
-  const saveWithdrawMethod = () => {
-    updateSettingsMutation.mutate({
-      withdrawMethod,
     });
   };
 
@@ -328,64 +303,6 @@ function SettingsPage() {
               </div>
             </div>
           </section>
-        </div>
-      )}
-
-      {activeTab === "withdraw" && (
-        <div className="mt-8 max-w-3xl">
-          <SettingsPanel
-            icon={<WalletCards size={24} className="text-green-400" />}
-            title="Withdraw Method"
-            description="Manage where seller payouts should be sent."
-          >
-            <div className="grid gap-4 md:grid-cols-2">
-              <InputField
-                label="Method"
-                value={withdrawMethod.type}
-                onChange={(value) =>
-                  setWithdrawMethod((current) => ({ ...current, type: value }))
-                }
-              />
-              <InputField
-                label="Account Name"
-                value={withdrawMethod.accountName}
-                onChange={(value) =>
-                  setWithdrawMethod((current) => ({
-                    ...current,
-                    accountName: value,
-                  }))
-                }
-              />
-              <InputField
-                label="Account Number"
-                value={withdrawMethod.accountNumber}
-                onChange={(value) =>
-                  setWithdrawMethod((current) => ({
-                    ...current,
-                    accountNumber: value,
-                  }))
-                }
-              />
-              <InputField
-                label="Bank Name"
-                value={withdrawMethod.bankName}
-                onChange={(value) =>
-                  setWithdrawMethod((current) => ({
-                    ...current,
-                    bankName: value,
-                  }))
-                }
-              />
-            </div>
-            <button
-              type="button"
-              onClick={saveWithdrawMethod}
-              disabled={updateSettingsMutation.isPending}
-              className="mt-5 h-10 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:bg-gray-700"
-            >
-              Save Withdraw Method
-            </button>
-          </SettingsPanel>
         </div>
       )}
 

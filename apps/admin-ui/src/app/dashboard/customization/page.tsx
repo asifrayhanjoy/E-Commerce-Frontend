@@ -176,11 +176,27 @@ const CustomizationPage = () => {
   const [logoPreview, setLogoPreview] = useState<UploadPreview | null>(null);
   const [bannerPreview, setBannerPreview] = useState<UploadPreview | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [paymentSettings, setPaymentSettings] = useState({
+    stripeEnabled: true,
+    bkashEnabled: true,
+    nagadEnabled: true,
+    bankTransferEnabled: true,
+    apiMode: "Sandbox",
+    usdToBdtRate: 110,
+  });
   const { data, isLoading } = useQuery({
     queryKey: ["admin-customization"],
     queryFn: fetchCustomization,
   });
   const customization = data || emptyCustomization;
+  useQuery({
+    queryKey: ["admin-payment-settings"],
+    queryFn: async () => {
+      const response = await axios.get("/api/admin/payment-settings", { withCredentials: true });
+      setPaymentSettings((current) => ({ ...current, ...(response.data?.settings || {}) }));
+      return response.data?.settings;
+    },
+  });
   const selectedSubCategoryCategory =
     subCategoryCategory &&
     customization.categories.includes(subCategoryCategory)
@@ -316,6 +332,34 @@ const CustomizationPage = () => {
           {serverError}
         </div>
       )}
+
+      <section className="mb-5 rounded-md border border-[#121a2d] bg-[#070b14] p-5">
+        <h2 className="text-[18px] font-semibold">Payment Gateway Settings</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {([
+            ["stripeEnabled", "Stripe"],
+            ["bkashEnabled", "bKash"],
+            ["nagadEnabled", "Nagad"],
+            ["bankTransferEnabled", "Bank Transfer"],
+          ] as const).map(([key, label]) => (
+            <label key={key} className="flex items-center gap-3 rounded-md border border-[#121a2d] px-3 py-3 text-sm">
+              <input type="checkbox" checked={Boolean(paymentSettings[key])} onChange={(event) => setPaymentSettings((current) => ({ ...current, [key]: event.target.checked }))} />
+              {label}
+            </label>
+          ))}
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <label className="text-sm">API mode
+            <select value={paymentSettings.apiMode} onChange={(event) => setPaymentSettings((current) => ({ ...current, apiMode: event.target.value }))} className="mt-2 h-10 w-full rounded-md border border-[#121a2d] bg-[#0d1324] px-3">
+              <option>Sandbox</option><option>Live</option>
+            </select>
+          </label>
+          <label className="text-sm">USD to BDT
+            <input type="number" value={paymentSettings.usdToBdtRate} onChange={(event) => setPaymentSettings((current) => ({ ...current, usdToBdtRate: Number(event.target.value) }))} className="mt-2 h-10 w-full rounded-md border border-[#121a2d] bg-[#0d1324] px-3" />
+          </label>
+        </div>
+        <button type="button" onClick={() => void axios.put("/api/admin/payment-settings", paymentSettings, { withCredentials: true })} className="mt-4 h-10 rounded-md bg-blue-600 px-4 text-sm font-semibold">Save payment settings</button>
+      </section>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_420px]">
         <section className="rounded-md border border-[#121a2d] bg-[#070b14] p-5">

@@ -8,6 +8,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import useUser from "@/hooks/use.User";
@@ -70,20 +71,19 @@ export default function CartPage() {
     cartItems,
     cartCount,
     cartTotal,
+    isReady: isCartReady,
     updateCartQuantity,
     removeFromCart,
     clearCart,
   } = useCart();
   const { user, isLoading: isUserLoading } = useUser();
+  const router = useRouter();
   const [couponCode, setCouponCode] = useState("");
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
-  const [isLoading, setLoading] = useState(false);
   const [storedCouponCode, setStoredCouponCode] = useState("");
   const [error, setError] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
-  const [discountAmount, setDiscountAmount] = useState<number>(0);
-  const [discountPercent, setDiscountPercent] = useState<number>(0);
-  const [discountedProductId, setDiscountedProductId] = useState<string>("");
+  const [couponSuccess, setCouponSuccess] = useState("");
   const orderCartItems = cartItems.map(({ product, quantity }) => ({
     id: product.id || product._id || product.productId || product.slug,
     title: product.title || product.name,
@@ -98,44 +98,28 @@ export default function CartPage() {
     selectedOptions: {},
     discount_codes: (product as any).discount_codes || [],
   }));
+  const clearAppliedCoupon = () => {
+    setStoredCouponCode("");
+    setCouponSuccess("");
+    setError("");
+  };
 
-  const createPaymentSession = async () => {
+  const continueToCheckout = () => {
+    if (!isCartReady) {
+      setCheckoutError("Your cart is still loading. Please try again.");
+      return;
+    }
     if (addresses.length === 0 || !selectedAddressId) {
       setCheckoutError("Please set your delivery address to create an order!");
       return;
     }
 
-    const appliedCoupon = storedCouponCode
-      ? {
-          storedCouponCode,
-          discountAmount,
-          discountPercent,
-          discountedProductId,
-        }
-      : null;
-
-    setLoading(true);
     setCheckoutError("");
-
-    try {
-      const response = await axios.post("/api/order/create-payment-session", {
-        cart: orderCartItems,
-        selectedAddressId,
-        coupon: appliedCoupon,
-      });
-
-      const sessionId = response.data?.sessionId;
-      if (sessionId) {
-        window.location.href = `/checkout?sessionId=${sessionId}`;
-      } else {
-        console.error("Payment session ID is missing");
-      }
-    } catch (error) {
-      console.error(error);
-      setCheckoutError("Could not prepare checkout. Please try again.");
-    } finally {
-      setLoading(false);
+    const params = new URLSearchParams({ address: selectedAddressId });
+    if (storedCouponCode) {
+      params.set("coupon", storedCouponCode);
     }
+    router.push(`/checkout?${params.toString()}`);
   };
 
   const {
@@ -157,6 +141,7 @@ export default function CartPage() {
 
   const couponCodeApplyHandler = async () => {
     setError("");
+    setCouponSuccess("");
 
     if (!couponCode.trim()) {
       setError("Coupon code is required!");
@@ -171,23 +156,21 @@ export default function CartPage() {
 
       if (res.data.valid) {
         setStoredCouponCode(couponCode.trim());
-        setDiscountAmount(parseFloat(res.data.discountAmount));
-        setDiscountPercent(res.data.discount);
-        setDiscountedProductId(res.data.discountedProductId);
+        setCouponSuccess(
+          "Coupon verified. The final discount will be recalculated securely at checkout."
+        );
         setCouponCode("");
       } else {
-        setDiscountAmount(0);
-        setDiscountPercent(0);
-        setDiscountedProductId("");
+        clearAppliedCoupon();
         setError(
           res.data.message || "Coupon not valid for any items in cart."
         );
       }
     } catch (error: any) {
-      setDiscountAmount(0);
-      setDiscountPercent(0);
-      setDiscountedProductId("");
-      setError(error?.response?.data?.message);
+      clearAppliedCoupon();
+      setError(
+        error?.response?.data?.message || "Could not verify this coupon."
+      );
     }
   };
 
@@ -212,16 +195,16 @@ export default function CartPage() {
 
   if (isUserLoading) {
     return (
-      <main className="mx-auto w-[90%] max-w-[1240px] py-10">
-        <div className="h-[320px] animate-pulse rounded-lg bg-slate-100" />
+      <main className="min-h-[70vh] bg-[#fafafa] px-4 py-10">
+        <div className="mx-auto h-[320px] max-w-7xl animate-pulse rounded-[28px] bg-white" />
       </main>
     );
   }
 
   if (!user) {
     return (
-      <main className="mx-auto w-[90%] max-w-[1240px] py-10">
-        <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white px-6 text-center">
+      <main className="min-h-[70vh] bg-[#fafafa] px-4 py-10">
+        <div className="mx-auto flex min-h-[320px] max-w-3xl items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white px-6 text-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-950">
               Sign in to view your cart
@@ -242,7 +225,8 @@ export default function CartPage() {
   }
 
   return (
-    <main className="mx-auto w-[90%] max-w-[1240px] py-10">
+    <main className="min-h-screen bg-[#fafafa] px-4 py-10 sm:px-6 lg:py-14">
+      <div className="mx-auto max-w-[1280px]">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <Link
@@ -252,7 +236,7 @@ export default function CartPage() {
             <ArrowLeft size={18} />
             Continue Shopping
           </Link>
-          <h1 className="text-3xl font-bold text-slate-950">Cart</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-slate-950">Your cart</h1>
           <p className="mt-1 text-sm font-medium text-slate-500">
             {cartCount} item{cartCount === 1 ? "" : "s"} ready for checkout
           </p>
@@ -262,7 +246,10 @@ export default function CartPage() {
           <button
             type="button"
             className="inline-flex items-center gap-2 rounded border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-            onClick={clearCart}
+            onClick={() => {
+              clearAppliedCoupon();
+              clearCart();
+            }}
           >
             <Trash2 size={16} />
             Clear Cart
@@ -271,7 +258,7 @@ export default function CartPage() {
       </div>
 
       {cartItems.length > 0 ? (
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+        <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_380px]">
           <section className="space-y-4">
             {cartItems.map(({ product, quantity }) => {
               const imageUrl =
@@ -289,12 +276,12 @@ export default function CartPage() {
               return (
                 <article
                   key={product.id || product.slug}
-                  className="grid gap-4 rounded-lg bg-white p-4 shadow-[0_16px_28px_-24px_rgba(15,23,42,0.55)] sm:grid-cols-[130px_1fr_auto]"
+                  className="grid gap-4 rounded-[24px] border border-slate-200/80 bg-white p-4 shadow-[0_16px_28px_-24px_rgba(15,23,42,0.45)] transition hover:border-blue-100 sm:grid-cols-[130px_1fr_auto] sm:p-5"
                 >
                   <Link
                     href={PRODUCT_DETAILS_PATH}
                     onClick={() => saveSelectedProductDetails(product)}
-                    className="h-[130px] overflow-hidden rounded-md bg-slate-50"
+                    className="h-[130px] overflow-hidden rounded-2xl bg-slate-50"
                   >
                     <img
                       src={imageUrl}
@@ -333,7 +320,10 @@ export default function CartPage() {
                       type="button"
                       aria-label="Remove from cart"
                       className="rounded-full p-2 text-slate-400 transition hover:bg-red-50 hover:text-red-600"
-                      onClick={() => removeFromCart(product)}
+                      onClick={() => {
+                        clearAppliedCoupon();
+                        removeFromCart(product);
+                      }}
                     >
                       <Trash2 size={20} />
                     </button>
@@ -343,9 +333,10 @@ export default function CartPage() {
                         type="button"
                         aria-label="Decrease quantity"
                         className="flex h-10 w-11 items-center justify-center bg-slate-200 text-slate-900"
-                        onClick={() =>
-                          updateCartQuantity(product, quantity - 1)
-                        }
+                        onClick={() => {
+                          clearAppliedCoupon();
+                          updateCartQuantity(product, quantity - 1);
+                        }}
                       >
                         <Minus size={16} strokeWidth={3} />
                       </button>
@@ -356,15 +347,16 @@ export default function CartPage() {
                         type="button"
                         aria-label="Increase quantity"
                         className="flex h-10 w-11 items-center justify-center bg-slate-200 text-slate-900"
-                        onClick={() =>
-                          updateCartQuantity(product, quantity + 1)
-                        }
+                        onClick={() => {
+                          clearAppliedCoupon();
+                          updateCartQuantity(product, quantity + 1);
+                        }}
                       >
                         <Plus size={16} strokeWidth={3} />
                       </button>
                     </div>
 
-                    <p className="text-xl font-bold text-slate-950">
+                    <p className="text-xl font-bold tabular-nums text-slate-950">
                       {formatPrice(price * quantity)}
                     </p>
                   </div>
@@ -373,7 +365,7 @@ export default function CartPage() {
             })}
           </section>
 
-          <aside className="h-max bg-white p-7 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+          <aside className="h-max rounded-[24px] border border-slate-200/80 bg-white p-6 shadow-[0_20px_50px_-28px_rgba(15,23,42,0.22)] lg:sticky lg:top-32">
             <div className="flex items-center justify-between pb-7 text-xl font-bold text-slate-950">
               <span>Subtotal</span>
               <span>{formatPrice(cartTotal)}</span>
@@ -386,23 +378,33 @@ export default function CartPage() {
               >
                 Have a Coupon?
               </label>
-              <div className="flex h-12 overflow-hidden rounded border border-slate-200 bg-gray-200">
+              <div className="flex h-12 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                 <input
                   id="coupon-code"
                   type="text"
                   value={couponCode}
-                  onChange={(event) => setCouponCode(event.target.value)}
+                  onChange={(event) => {
+                    if (storedCouponCode) {
+                      clearAppliedCoupon();
+                    }
+                    setCouponCode(event.target.value);
+                  }}
                   placeholder="Enter coupon code"
                   className="min-w-0 flex-1 px-3 text-base font-medium text-slate-700 outline-none placeholder:text-slate-400"
                 />
                 <button
                   onClick={couponCodeApplyHandler}
                   type="button"
-                  className="w-24 bg-blue-600 text-base font-semibold text-white transition hover:bg-blue-700"
+                  className="w-24 bg-[#0b0f19] text-sm font-bold text-white transition hover:bg-blue-700"
                 >
                   Apply
                 </button>
               </div>
+              {couponSuccess && (
+                <p className="mt-2 text-sm font-medium text-emerald-400">
+                  {couponSuccess}
+                </p>
+              )}
               {error && (
                 <p className="mt-2 text-sm font-semibold text-red-600">
                   {error}
@@ -455,20 +457,10 @@ export default function CartPage() {
             </div>
 
             <div className="border-t border-slate-200 py-5">
-              <label
-                htmlFor="payment-method"
-                className="mb-3 block text-base font-bold text-slate-950"
-              >
-                Select Payment Method
-              </label>
-              <select
-                id="payment-method"
-                className="h-12 w-full rounded border border-slate-200 bg-white px-3 text-base font-semibold text-slate-800 outline-none"
-                defaultValue="online"
-              >
-                <option value="online">Online Payment</option>
-                <option value="cash">Cash On Delivery</option>
-              </select>
+              <p className="text-sm font-bold text-slate-950">Payment method</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Choose Stripe card, bank transfer, bKash, or Nagad securely in the next step.
+              </p>
             </div>
 
             <div className="flex items-center justify-between border-t border-slate-200 py-7 text-xl font-bold text-slate-950">
@@ -484,16 +476,16 @@ export default function CartPage() {
 
             <button
               type="button"
-              onClick={createPaymentSession}
-              disabled={isLoading}
-              className="h-14 w-full rounded-md bg-slate-950 text-base font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              onClick={continueToCheckout}
+              disabled={!isCartReady || areAddressesLoading}
+              className="h-14 w-full rounded-2xl bg-[#0b0f19] text-base font-bold text-white transition hover:-translate-y-0.5 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
-              {isLoading ? "Preparing Checkout..." : "Proceed to Checkout"}
+              {!isCartReady || areAddressesLoading ? "Loading checkout..." : "Proceed to Checkout"}
             </button>
           </aside>
         </div>
       ) : (
-        <div className="flex min-h-[320px] items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white px-6 text-center">
+        <div className="flex min-h-[320px] items-center justify-center rounded-[28px] border border-dashed border-slate-300 bg-white px-6 text-center">
           <div>
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-700">
               <ShoppingBag size={26} />
@@ -513,6 +505,7 @@ export default function CartPage() {
           </div>
         </div>
       )}
+      </div>
     </main>
   );
 }

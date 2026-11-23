@@ -424,13 +424,63 @@ function ProfilePageContent() {
     changePasswordMutation.mutate(passwordForm);
   };
 
+  if (isLoading) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center bg-[#070b14] px-4 py-12">
+        <div
+          className="flex items-center gap-3 text-sm font-medium text-slate-400"
+          role="status"
+        >
+          <Loader2 className="size-5 animate-spin text-sky-400" />
+          Loading your account…
+        </div>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return (
+      <main className="flex min-h-[60vh] items-center justify-center bg-[#070b14] px-4 py-12">
+        <section className="w-full max-w-lg rounded-3xl border border-white/10 bg-[#111827] p-8 text-center shadow-[0_24px_70px_rgba(0,0,0,0.38)] sm:p-10">
+          <div className="mx-auto grid size-14 place-items-center rounded-2xl border border-sky-300/20 bg-sky-400/10 text-sky-300">
+            <User size={24} aria-hidden="true" />
+          </div>
+          <h1 className="mt-5 text-2xl font-bold text-slate-50">
+            Sign in to your account
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            Your profile, orders, addresses, and messages are available after
+            you sign in.
+          </p>
+          <div className="mt-7 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/login"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl bg-sky-400 px-5 text-sm font-bold text-slate-950 transition hover:bg-sky-300"
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/register"
+              className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/10 bg-[#0b1120] px-5 text-sm font-bold text-slate-200 transition hover:border-sky-300/40 hover:text-sky-300"
+            >
+              Create an account
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
-    <div className="bg-gray-50 p-6 pb-14">
-      <div className="mx-auto max-w-[1488px]">
-        <div className="mb-[54px] text-center text-2xl font-bold">
-          <h1 className="text-[32px] font-bold leading-none text-gray-800">
+    <div className="min-h-screen bg-[#fafafa] p-4 pb-14 sm:p-6">
+      <div className="mx-auto max-w-[1440px]">
+        <div className="mb-9 text-left">
+          <p className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.2em] text-blue-700">
+            Your ARJ account
+          </p>
+          <h1 className="text-3xl font-bold leading-tight tracking-tight text-slate-950 sm:text-4xl">
             Welcome back,{" "}
-            <span className="text-blue-600">
+            <span className="text-blue-700">
               {isLoading ? (
                 <Loader2 className="inline h-5 w-5 animate-spin" />
               ) : (
@@ -441,11 +491,11 @@ function ProfilePageContent() {
           </h1>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {orderStats.map(({ title, count, Icon }) => (
             <div
               key={title}
-              className="flex min-h-[104px] items-center justify-between rounded bg-white px-6 py-6 shadow-sm"
+              className="flex min-h-[104px] items-center justify-between rounded-2xl border border-slate-200/80 bg-white px-6 py-6 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.5)]"
             >
               <div>
                 <p className="text-sm font-medium text-gray-400">{title}</p>
@@ -457,14 +507,14 @@ function ProfilePageContent() {
               <Icon
                 size={44}
                 strokeWidth={1.8}
-                className="text-blue-500"
+                className="text-blue-600"
                 aria-hidden="true"
               />
             </div>
           ))}
         </div>
-        <div className="mt-12 flex flex-col gap-7 md:flex-row">
-          <div className="w-full rounded-md border border-gray-100 bg-white p-5 shadow-md md:w-[300px]">
+        <div className="mt-7 grid items-start gap-6 lg:grid-cols-[250px_minmax(0,1fr)] 2xl:grid-cols-[250px_minmax(0,1fr)_250px]">
+          <div className="w-full rounded-[24px] border border-slate-200/80 bg-white p-4 shadow-sm">
             <nav className="space-y-2">
               <NavItem
                 label="Profile"
@@ -511,7 +561,7 @@ function ProfilePageContent() {
             </nav>
           </div>
 
-          <div className="min-h-[386px] w-full rounded bg-white px-7 py-8 shadow-[0_2px_10px_rgba(15,23,42,0.12)] md:w-[820px] md:flex-none">
+          <div className="min-h-[386px] min-w-0 rounded-[24px] border border-slate-200/80 bg-white px-5 py-6 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.4)] sm:px-7 sm:py-8">
             {activeTab === "Profile" && !isLoading && user ? (
               <div className="flex flex-col gap-[26px]">
                 <h2 className="text-[25px] font-bold leading-none text-gray-900">
@@ -881,7 +931,7 @@ function ProfilePageContent() {
             )}
           </div>
           {/* Right Quick Panel */}
-<div className="w-full md:w-1/4 space-y-4">
+<div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-1">
   <QuickActionCard 
   Icon={Gift}
   title="Referral Program"
@@ -1022,7 +1072,7 @@ function Page() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 p-6 pb-14">
+        <div className="min-h-screen bg-[#fafafa] p-6 pb-14">
           <div className="mx-auto max-w-7xl" />
         </div>
       }

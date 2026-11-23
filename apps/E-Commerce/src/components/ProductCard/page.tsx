@@ -119,7 +119,6 @@ const ProductQuickView = ({
     stripHtml(product?.detailed_description) ||
     "No description available.";
   const sizes = toList(product?.sizes);
-  const availableSizes = sizes.length > 0 ? sizes : ["XS"];
   const shop = product?.Shop || product?.shop;
   const shopName = typeof shop?.name === "string" ? shop.name.trim() : "";
   const shopAddress =
@@ -136,7 +135,7 @@ const ProductQuickView = ({
       onClick={onClose}
     >
       <div
-        className="relative grid max-h-[92vh] min-h-[720px] w-full max-w-[1180px] overflow-y-auto rounded-lg bg-white shadow-2xl md:grid-cols-[52%_48%]"
+        className="relative grid max-h-[92vh] min-h-[640px] w-full max-w-[1180px] overflow-y-auto rounded-[28px] bg-white shadow-2xl md:grid-cols-[52%_48%]"
         onClick={(event) => event.stopPropagation()}
       >
         <button
@@ -226,13 +225,14 @@ const ProductQuickView = ({
                 </div>
               </div>
 
-              <button
-                type="button"
-                className="flex h-[48px] shrink-0 cursor-pointer items-center gap-2 rounded-md bg-blue-700 px-5 text-base font-bold text-white shadow-md transition hover:bg-blue-800"
+              <Link
+                href={PRODUCT_DETAILS_PATH}
+                onClick={() => saveSelectedProductDetails(product)}
+                className="flex h-[48px] shrink-0 items-center gap-2 rounded-xl bg-sky-500 px-5 text-sm font-bold text-slate-950 shadow-md transition hover:-translate-y-0.5 hover:bg-sky-300"
               >
                 <MessageCircle size={22} />
-                Chat with Seller
-              </button>
+                Seller details & chat
+              </Link>
             </div>
           )}
 
@@ -245,20 +245,23 @@ const ProductQuickView = ({
               {shortDescription}
             </p>
 
-            <div className="mt-7">
-              <h3 className="text-xl font-bold text-slate-950">Size:</h3>
-              <div className="mt-3 flex flex-wrap gap-3">
-                {availableSizes.map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    className="rounded-md bg-slate-950 px-5 py-3 text-lg font-semibold text-white"
-                  >
-                    {size}
-                  </button>
-                ))}
+            {sizes.length > 0 && (
+              <div className="mt-7">
+                <h3 className="text-sm font-bold text-slate-300">
+                  Available sizes
+                </h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {sizes.map((size) => (
+                    <span
+                      key={size}
+                      className="rounded-lg border border-white/10 bg-[#111827] px-3 py-2 text-sm font-semibold text-slate-200"
+                    >
+                      {size}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="mt-8 flex items-end gap-5">
               {salePrice !== undefined && salePrice !== null && (
@@ -303,16 +306,14 @@ const ProductQuickView = ({
                     ? `Add to cart, ${cartQuantity} in cart`
                     : "Add to cart"
                 }
-                className="relative flex h-[52px] cursor-pointer items-center gap-3 rounded-md bg-orange-600 px-8 text-lg font-bold text-white shadow-md transition hover:bg-orange-700"
+                className="relative flex h-[52px] cursor-pointer items-center gap-3 rounded-xl bg-[#0b0f19] px-8 text-lg font-bold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-blue-700"
                 onClick={() => onAddToCart(quantity)}
               >
                 <ShoppingBag size={24} />
                 {isAddedToCart ? "Added to Cart" : "Add to Cart"}
-                {isAddedToCart && (
-                  <span className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1.5 text-xs font-bold leading-none text-white">
-                    {cartQuantity > 9 ? "9+" : cartQuantity}
-                  </span>
-                )}
+                <span className="absolute -right-1 -top-1 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-[#0b0f19] bg-amber-400 px-1.5 text-xs font-extrabold leading-none text-[#111827] shadow-md">
+                  {cartQuantity > 9 ? "9+" : cartQuantity}
+                </span>
               </button>
 
               <button
@@ -420,57 +421,54 @@ const ProductCard = ({
   };
 
   return (
-    <div className="relative h-[430px] w-full overflow-hidden rounded-lg bg-white shadow-[0_18px_24px_-18px_rgba(15,23,42,0.45)]">
+    <article className="fade-up group relative flex h-[430px] w-full flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_18px_38px_-28px_rgba(15,23,42,0.48)] transition duration-500 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_28px_58px_-30px_rgba(15,23,42,0.38)]">
       {isEvent && (
-        <div className="absolute left-4 top-4 z-10 rounded-full bg-red-600 px-3 py-1 text-xs font-bold text-white">
+        <div className="absolute left-4 top-4 z-10 rounded-full border border-rose-200/70 bg-white/90 px-3 py-1.5 text-[10px] font-extrabold tracking-[0.16em] text-rose-700 shadow-sm backdrop-blur">
           OFFER
         </div>
       )}
 
       {product?.stock <= 5 && (
-        <div className="absolute right-4 top-4 z-10 rounded-full bg-yellow-400 px-3 py-1.5 text-sm font-bold leading-none text-slate-950">
+        <div className="absolute right-4 top-4 z-10 rounded-full border border-emerald-400/20 bg-[#0c2a25]/95 px-3 py-1.5 text-[10px] font-bold leading-none text-emerald-200 shadow-sm backdrop-blur">
           Limited Stock
         </div>
       )}
 
-      <div className="flex h-[278px] w-full bg-white pl-5 pr-3 pt-5">
+      <div className="relative h-[260px] w-full shrink-0 overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,#ffffff_0%,#f8f7f3_100%)]">
         <Link
           href={PRODUCT_DETAILS_PATH}
           onClick={() => saveSelectedProductDetails(product)}
-          className="block h-[248px] min-w-0 flex-1 overflow-hidden bg-white"
+          className="image-zoom block h-full w-full overflow-hidden"
         >
           <img
             src={imageUrl}
             alt={product?.title || "Product image"}
             width={300}
             height={300}
-            className="h-full w-full object-cover object-top"
+            className="h-full w-full object-contain p-5 transition-transform duration-700 ease-out group-hover:scale-105"
           />
         </Link>
 
-        <div className="flex w-11 shrink-0 flex-col items-center gap-3 pt-16">
+        <div className="absolute bottom-4 right-4 flex flex-col gap-2 sm:translate-x-2 sm:opacity-0 sm:transition-all sm:duration-300 sm:group-hover:translate-x-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-x-0 sm:group-focus-within:opacity-100">
           <button
             type="button"
             aria-label="Add to wishlist"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md"
+            className="grid size-10 place-items-center rounded-full border border-slate-200/80 bg-white/95 text-rose-500 shadow-lg backdrop-blur transition duration-200 hover:scale-110 hover:border-rose-200 hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
             onClick={handleWishlistClick}
           >
             <Heart
-              className="cursor-pointer text-red-500 transition hover:scale-110"
+              className="transition-transform duration-200"
               size={24}
-              fill={isWishlisted ? "red" : "none"}
+              fill={isWishlisted ? "currentColor" : "none"}
             />
           </button>
           <button
             type="button"
             aria-label="Quick view"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md"
+            className="grid size-10 place-items-center rounded-full border border-slate-200/80 bg-white/95 text-slate-700 shadow-lg backdrop-blur transition duration-200 hover:scale-110 hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
             onClick={() => setIsQuickViewOpen(true)}
           >
-            <Eye
-              className="cursor-pointer text-slate-900 transition hover:scale-110"
-              size={24}
-            />
+            <Eye size={21} />
           </button>
           <button
             type="button"
@@ -479,38 +477,34 @@ const ProductCard = ({
                 ? `Add to cart, ${cartQuantity} in cart`
                 : "Add to cart"
             }
-            className={`relative flex h-10 w-10 items-center justify-center rounded-full shadow-md transition ${
+            className={`relative grid size-10 place-items-center rounded-full border border-slate-200/80 bg-white/95 shadow-lg backdrop-blur transition duration-200 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
               isAddedToCart
-                ? "bg-orange-50 ring-2 ring-orange-200"
-                : "bg-white"
+                ? "text-blue-700 ring-2 ring-blue-500/25"
+                : "text-slate-700 hover:text-blue-700"
             }`}
             onClick={() => handleAddToCart()}
           >
             <ShoppingBag
-              className={`cursor-pointer transition hover:scale-110 ${
-                isAddedToCart ? "text-orange-600" : "text-slate-900"
-              }`}
-              size={24}
+              className="transition-transform duration-200"
+              size={21}
             />
-            {isAddedToCart && (
-              <span className="absolute -right-2 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-red-500 px-1 text-[11px] font-bold leading-none text-white">
-                {cartQuantity > 9 ? "9+" : cartQuantity}
-              </span>
-            )}
+            <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-slate-900 bg-sky-300 px-1 text-[11px] font-extrabold leading-none text-[#07111f] shadow-md">
+              {cartQuantity > 9 ? "9+" : cartQuantity}
+            </span>
           </button>
         </div>
       </div>
 
-      <div className="h-[152px] px-5 pb-5 pt-3">
+      <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4">
         <Link
           href={PRODUCT_DETAILS_PATH}
           onClick={() => saveSelectedProductDetails(product)}
           className="block"
         >
-          <p className="truncate text-sm font-semibold text-blue-700">
+          <p className="truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-700">
             {productName}
           </p>
-          <h3 className="mt-2 line-clamp-1 text-lg font-bold text-slate-950">
+          <h3 className="mt-2 line-clamp-1 text-base font-bold tracking-tight text-slate-950 transition-colors duration-200 group-hover:text-blue-700">
             {productTitle}
           </h3>
         </Link>
@@ -519,20 +513,20 @@ const ProductCard = ({
           <Ratings rating={product?.ratings} />
         </div>
 
-        <div className="mt-4 flex items-end justify-between gap-3">
+        <div className="mt-auto flex items-end justify-between gap-3 pt-4">
           <div className="flex min-w-0 items-end gap-2">
             {salePrice !== undefined && salePrice !== null && (
-              <span className="whitespace-nowrap text-[22px] font-black leading-none text-slate-950">
+              <span className="whitespace-nowrap text-xl font-black leading-none tracking-tight text-slate-950">
                 {formatPrice(salePrice)}
               </span>
             )}
             {regularPrice !== undefined && regularPrice !== null && (
-              <span className="truncate pb-0.5 text-base font-bold text-slate-400 line-through">
+              <span className="truncate pb-0.5 text-xs font-semibold text-slate-400 line-through">
                 {formatPrice(regularPrice)}
               </span>
             )}
           </div>
-          <span className="shrink-0 whitespace-nowrap pb-0.5 text-base font-bold text-emerald-600">
+          <span className="shrink-0 whitespace-nowrap pb-0.5 text-[10px] font-bold text-slate-400">
             {soldCount} sold
           </span>
         </div>
@@ -555,7 +549,7 @@ const ProductCard = ({
           onClose={() => setIsQuickViewOpen(false)}
         />
       )}
-    </div>
+    </article>
   );
 };
 

@@ -143,16 +143,16 @@ const ProductGridSkeleton = () => (
     {Array.from({ length: 8 }).map((_, index) => (
       <div
         key={index}
-        className="h-[540px] overflow-hidden rounded-lg bg-white shadow-sm"
+        className="h-[540px] overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm"
       >
-        <div className="h-[360px] animate-pulse bg-slate-100" />
+        <div className="skeleton-shimmer h-[360px] rounded-3xl" />
         <div className="space-y-4 px-5 py-5">
-          <div className="h-4 w-24 animate-pulse rounded bg-slate-100" />
-          <div className="h-5 w-full animate-pulse rounded bg-slate-100" />
-          <div className="h-4 w-32 animate-pulse rounded bg-slate-100" />
+          <div className="skeleton-shimmer h-4 w-24 rounded" />
+          <div className="skeleton-shimmer h-5 w-full rounded" />
+          <div className="skeleton-shimmer h-4 w-32 rounded" />
           <div className="flex justify-between">
-            <div className="h-7 w-24 animate-pulse rounded bg-slate-100" />
-            <div className="h-5 w-16 animate-pulse rounded bg-slate-100" />
+            <div className="skeleton-shimmer h-7 w-24 rounded" />
+            <div className="skeleton-shimmer h-5 w-16 rounded" />
           </div>
         </div>
       </div>
@@ -161,7 +161,7 @@ const ProductGridSkeleton = () => (
 );
 
 const FilterHeading = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="border-b border-slate-200 pb-2 text-[26px] font-bold leading-tight text-slate-950">
+  <h2 className="relative border-b border-slate-100 pb-3 text-lg font-bold leading-tight tracking-tight text-slate-950 after:absolute after:bottom-0 after:left-0 after:h-px after:w-14 after:bg-blue-600">
     {children}
   </h2>
 );
@@ -306,9 +306,22 @@ export default function ProductCatalog({
   };
 
   return (
-    <main className="min-h-screen bg-[#f7f6f6] text-slate-950">
-      <div className="mx-auto w-[90%] max-w-[1500px] py-9 lg:w-[80%]">
-        <div className="mb-10 text-lg font-semibold text-slate-600">
+    <main className="min-h-screen bg-[#fafafa] text-slate-950">
+      <div className="mx-auto w-[92%] max-w-[1440px] py-10 lg:py-14">
+        <div className="mb-7">
+          <p className="arj-eyebrow text-blue-700">
+            {isOffersPage ? "Curated value" : "The ARJ edit"}
+          </p>
+          <h1 className="mt-2 text-4xl font-bold tracking-[-0.045em] text-slate-950 sm:text-5xl">
+            {pageLabel}
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 sm:text-base">
+            {isOffersPage
+              ? "Explore current offers from independent sellers across the marketplace."
+              : "Discover thoughtful finds from independent sellers, selected for everyday living."}
+          </p>
+        </div>
+        <div className="mb-8 text-sm font-semibold text-slate-500">
           <Link href="/" className="transition hover:text-blue-700">
             Home
           </Link>
@@ -322,8 +335,8 @@ export default function ProductCatalog({
           )}
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)]">
-          <aside className="h-fit bg-white p-6 shadow-sm">
+        <div className="grid gap-7 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="h-fit rounded-[24px] border border-slate-200/80 bg-white p-6 shadow-[0_16px_40px_-32px_rgba(15,23,42,0.5)] lg:sticky lg:top-32">
             <div>
               <FilterHeading>Price Filter</FilterHeading>
               <div className="pt-8">
@@ -338,12 +351,12 @@ export default function ProductCatalog({
                   className="h-2 w-full cursor-pointer accent-blue-700"
                 />
                 <div className="mt-6 flex items-center justify-between gap-4">
-                  <span className="text-lg font-bold text-slate-600">
+                  <span className="text-sm font-bold tabular-nums text-slate-600">
                     $0 - ${maxPriceDraft}
                   </span>
                   <button
                     type="button"
-                    className="h-10 rounded-md bg-slate-100 px-5 text-base font-bold text-slate-800 transition hover:bg-blue-700 hover:text-white"
+                    className="h-10 rounded-xl bg-slate-100 px-5 text-sm font-bold text-slate-800 transition hover:bg-[#0b0f19] hover:text-white"
                     onClick={() => {
                       setAppliedMaxPrice(maxPriceDraft);
                       setPage(1);
@@ -362,13 +375,13 @@ export default function ProductCatalog({
                   ? Array.from({ length: 4 }).map((_, index) => (
                       <div
                         key={index}
-                        className="h-6 animate-pulse rounded bg-slate-100"
+                        className="skeleton-shimmer h-6 rounded"
                       />
                     ))
                   : categoryOptions.map((category) => (
                       <label
                         key={category}
-                        className="flex cursor-pointer items-center gap-3 text-base font-semibold text-slate-600"
+                        className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-600"
                       >
                         <input
                           type="checkbox"
@@ -393,7 +406,7 @@ export default function ProductCatalog({
                 {colorOptions.map((color) => (
                   <label
                     key={color.value}
-                    className="flex cursor-pointer items-center gap-3 text-base font-semibold text-slate-600"
+                    className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-600"
                   >
                     <input
                       type="checkbox"
@@ -422,7 +435,7 @@ export default function ProductCatalog({
                 {sizeOptions.map((size) => (
                   <label
                     key={size}
-                    className="flex cursor-pointer items-center gap-3 text-base font-semibold text-slate-600"
+                    className="flex cursor-pointer items-center gap-3 text-sm font-medium text-slate-600"
                   >
                     <input
                       type="checkbox"
@@ -450,7 +463,7 @@ export default function ProductCatalog({
                     type="button"
                     className={`flex h-10 items-center justify-center gap-1 rounded-md text-sm font-bold transition ${
                       minRating === rating
-                        ? "bg-blue-700 text-white"
+                        ? "bg-[#0b0f19] text-white"
                         : "bg-slate-100 text-slate-700 hover:bg-blue-50 hover:text-blue-700"
                     }`}
                     onClick={() => {
@@ -468,7 +481,7 @@ export default function ProductCatalog({
             {hasActiveFilters && (
               <button
                 type="button"
-                className="mt-8 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-slate-950 text-sm font-bold text-white transition hover:bg-blue-700"
+                className="mt-8 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0b0f19] text-sm font-bold text-white transition hover:bg-blue-700"
                 onClick={resetFilters}
               >
                 <X size={17} />
@@ -481,7 +494,7 @@ export default function ProductCatalog({
             {isLoading && <ProductGridSkeleton />}
 
             {!isLoading && isError && (
-              <div className="flex min-h-[360px] items-center justify-center bg-white px-6 text-center shadow-sm">
+              <div className="flex min-h-[360px] items-center justify-center rounded-[28px] border border-slate-200/80 bg-white px-6 text-center shadow-sm">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-950">
                     Products could not load
@@ -492,7 +505,7 @@ export default function ProductCatalog({
                   </p>
                   <button
                     type="button"
-                    className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-blue-700 px-5 text-sm font-bold text-white transition hover:bg-blue-800"
+                    className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0b0f19] px-5 text-sm font-bold text-white transition hover:bg-blue-700"
                     onClick={() => refetch()}
                   >
                     <RefreshCw size={17} />
@@ -503,7 +516,7 @@ export default function ProductCatalog({
             )}
 
             {!isLoading && !isError && products.length === 0 && (
-              <div className="flex min-h-[360px] items-center justify-center bg-white px-6 text-center shadow-sm">
+              <div className="flex min-h-[360px] items-center justify-center rounded-[28px] border border-slate-200/80 bg-white px-6 text-center shadow-sm">
                 <div>
                   <h2 className="text-2xl font-bold text-slate-950">
                     {isOffersPage ? "No offers found" : "No products found"}
@@ -513,7 +526,7 @@ export default function ProductCatalog({
                   </p>
                   <button
                     type="button"
-                    className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-slate-950 px-5 text-sm font-bold text-white transition hover:bg-blue-700"
+                    className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0b0f19] px-5 text-sm font-bold text-white transition hover:bg-blue-700"
                     onClick={resetFilters}
                   >
                     <X size={17} />
@@ -525,7 +538,7 @@ export default function ProductCatalog({
 
             {!isLoading && !isError && products.length > 0 && (
               <>
-                <div className="grid grid-cols-1 gap-7 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {products.map((product, index) => (
                     <ProductCard
                       key={product.id || product._id || `${product.title}-${index}`}
@@ -535,7 +548,7 @@ export default function ProductCatalog({
                   ))}
                 </div>
 
-                <div className="mt-8 flex flex-col gap-4 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm font-bold text-slate-600">
                     {formatNumber(total)} products found | Page {currentPage} of{" "}
                     {totalPages}

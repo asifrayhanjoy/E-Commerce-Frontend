@@ -20,14 +20,10 @@ const useUser = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      setLoggedIn(true);
+    if (!isLoading) {
+      setLoggedIn(Boolean(user) && !isError);
     }
-
-    if (isError) {
-      setLoggedIn(false);
-    }
-  }, [user, isError, setLoggedIn]);
+  }, [user, isError, isLoading, setLoggedIn]);
 
   return {
     user: user as any,

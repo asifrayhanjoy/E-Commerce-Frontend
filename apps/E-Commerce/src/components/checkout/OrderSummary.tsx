@@ -1,126 +1,114 @@
 "use client";
 
 import { ShoppingBag } from "lucide-react";
+import type { CartItem } from "@/contexts/CartContext";
 
-type CheckoutCartItem = {
-  id?: string;
-  _id?: string;
-  title?: string;
-  name?: string;
-  quantity?: number;
-  sale_price?: number;
-  price?: number;
-  product?: {
-    id?: string;
-    _id?: string;
-    title?: string;
-    name?: string;
-    sale_price?: number;
-    price?: number;
-    images?: { url?: string }[];
-  };
+export type AuthoritativeCheckoutTotals = {
+  subtotalAmount: number;
+  discountAmount: number;
+  platformFeeAmount: number;
+  sellerNetAmount: number;
+  totalAmount: number;
 };
 
-export type CheckoutSession = {
-  cart?: CheckoutCartItem[];
-  sellers?: {
-    shopId?: string;
-    sellerId?: string;
-    stripeAccountId?: string | null;
-  }[];
-  totalAmount?: number;
-  coupon?: {
-    discountAmount?: number;
-    discountPercent?: number;
-  } | null;
+type OrderSummaryProps = {
+  cartItems: CartItem[];
+  totals: AuthoritativeCheckoutTotals | null;
+  currency: "USD" | "BDT";
+  isPreparing: boolean;
 };
 
-const formatPrice = (value?: number) => {
-  const numericValue = Number(value || 0);
-
-  return new Intl.NumberFormat("en-US", {
+const formatPrice = (value: number, currency: "USD" | "BDT") =>
+  new Intl.NumberFormat(currency === "BDT" ? "en-BD" : "en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(Number.isFinite(numericValue) ? numericValue : 0);
-};
+  }).format(Number.isFinite(value) ? value : 0);
 
-const getItemTitle = (item: CheckoutCartItem) =>
-  item.title || item.name || item.product?.title || item.product?.name || "Product";
-
-const getItemPrice = (item: CheckoutCartItem) =>
-  Number(item.sale_price ?? item.price ?? item.product?.sale_price ?? item.product?.price ?? 0);
-
-const getItemQuantity = (item: CheckoutCartItem) => Number(item.quantity || 1);
-
-const getOrderTotal = (session: CheckoutSession) => {
-  if (typeof session.totalAmount === "number") {
-    return session.totalAmount;
-  }
-
-  return (session.cart || []).reduce(
-    (total, item) => total + getItemPrice(item) * getItemQuantity(item),
-    0
-  );
-};
-
-export default function OrderSummary({ session }: { session: CheckoutSession }) {
-  const cart = session.cart || [];
-  const subtotal = getOrderTotal(session);
-  const discount = Number(session.coupon?.discountAmount || 0);
-  const total = Math.max(subtotal - discount, 0);
-
+export default function OrderSummary({
+  cartItems,
+  totals,
+  currency,
+  isPreparing,
+}: OrderSummaryProps) {
   return (
-    <aside className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="mb-5 flex items-center gap-3 border-b border-slate-200 pb-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-950">
-          <ShoppingBag className="h-5 w-5" />
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold text-slate-950">Order summary</h2>
-          <p className="text-sm text-slate-500">
-            {cart.length} item{cart.length === 1 ? "" : "s"}
-          </p>
+    <aside className="h-fit overflow-hidden rounded-[26px] border border-slate-200/80 bg-white shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
+      <div className="border-b border-slate-100 bg-gradient-to-br from-blue-50/80 to-white p-6">
+        <div className="flex items-center gap-3">
+          <div className="grid size-11 place-items-center rounded-2xl bg-slate-950 text-emerald-300 shadow-md">
+            <ShoppingBag className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight text-slate-950">
+              Order summary
+            </h2>
+            <p className="mt-1 text-xs font-semibold text-slate-500">
+              {cartItems.length} item{cartItems.length === 1 ? "" : "s"}
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {cart.map((item, index) => {
-          const quantity = getItemQuantity(item);
-          const lineTotal = getItemPrice(item) * quantity;
+      <div className="max-h-[320px] space-y-4 overflow-y-auto p-6">
+        {cartItems.map(({ product, quantity }, index) => {
+          const key =
+            product.id || product._id || product.productId || product.slug || index;
 
           return (
             <div
-              key={item.id || item._id || item.product?.id || item.product?._id || index}
+              key={key}
               className="flex items-start justify-between gap-4 border-b border-slate-100 pb-4 last:border-0 last:pb-0"
             >
-              <div>
-                <p className="text-sm font-semibold text-slate-950">
-                  {getItemTitle(item)}
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-slate-900">
+                  {product.title || product.name || "Product"}
                 </p>
-                <p className="mt-1 text-sm text-slate-500">Qty {quantity}</p>
+                <p className="mt-1 text-xs font-medium text-slate-500">
+                  Quantity {quantity}
+                </p>
               </div>
-              <p className="text-sm font-semibold text-slate-950">
-                {formatPrice(lineTotal)}
-              </p>
             </div>
           );
         })}
       </div>
 
-      <div className="mt-5 space-y-3 border-t border-slate-200 pt-5 text-sm">
-        <div className="flex items-center justify-between text-slate-600">
-          <span>Subtotal</span>
-          <span>{formatPrice(subtotal)}</span>
-        </div>
-        <div className="flex items-center justify-between text-slate-600">
-          <span>Discount</span>
-          <span>-{formatPrice(discount)}</span>
-        </div>
-        <div className="flex items-center justify-between border-t border-slate-200 pt-4 text-base font-semibold text-slate-950">
-          <span>Total</span>
-          <span>{formatPrice(total)}</span>
+      <div className="border-t border-slate-100 px-6 pb-6">
+        <div className="space-y-3 pt-5 text-sm">
+          {[
+            ["Subtotal", totals?.subtotalAmount],
+            ["Coupon discount", totals?.discountAmount],
+            ["Platform fee (10%)", totals?.platformFeeAmount],
+          ].map(([label, amount]) => (
+            <div
+              key={String(label)}
+              className="flex items-center justify-between gap-4 text-slate-500"
+            >
+              <span>{label}</span>
+              <span className="font-semibold text-slate-700">
+                {typeof amount === "number"
+                  ? `${label === "Coupon discount" ? "−" : ""}${formatPrice(amount, currency)}`
+                  : isPreparing
+                    ? "Verifying…"
+                    : "—"}
+              </span>
+            </div>
+          ))}
+          <div className="mt-4 flex items-end justify-between gap-4 border-t border-slate-200 pt-5">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
+                Verified total
+              </p>
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                {isPreparing ? "Rechecking prices and stock" : "Server-calculated"}
+              </p>
+            </div>
+            <p className="text-2xl font-black tracking-tight text-slate-950">
+              {typeof totals?.totalAmount === "number"
+                ? formatPrice(totals.totalAmount, currency)
+                : "—"}
+            </p>
+          </div>
         </div>
       </div>
     </aside>

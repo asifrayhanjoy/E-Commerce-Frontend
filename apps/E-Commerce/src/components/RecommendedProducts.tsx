@@ -4,6 +4,8 @@ import ProductCard from "@/components/ProductCard/page";
 import SectionTitle from "@/components/SectionTitle/page";
 import { useRecommendedProducts } from "@/hooks/useRecommendedProducts";
 import type { RecommendedProduct } from "@/hooks/useRecommendedProducts";
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 const getProductKey = (
   product: RecommendedProduct,
@@ -16,7 +18,7 @@ const RecommendedProductsSkeleton = () => (
     {Array.from({ length: 10 }).map((_, index) => (
       <div
         key={index}
-        className="h-[430px] animate-pulse rounded-lg bg-gray-300"
+        className="skeleton-shimmer h-[430px] rounded-3xl"
       />
     ))}
   </div>
@@ -35,8 +37,15 @@ const RecommendedProducts = () => {
 
   return (
     <section className="mb-10">
-      <div className="mb-8">
+      <div className="mb-8 flex items-end justify-between gap-4">
         <SectionTitle title="Recommended For You" />
+        <Link
+          href="/products"
+          className="group mb-1 inline-flex shrink-0 items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-blue-700"
+        >
+          View all
+          <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+        </Link>
       </div>
 
       {isLoading && <RecommendedProductsSkeleton />}

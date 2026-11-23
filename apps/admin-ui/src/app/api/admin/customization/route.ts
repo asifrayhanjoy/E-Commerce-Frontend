@@ -11,10 +11,7 @@ export const dynamic = "force-dynamic";
 
 const backendBases = getAdminBackendBases();
 
-const getCustomizationPaths = () => [
-  "/admin/customization",
-  "/auth/admin/customization",
-];
+const getCustomizationPaths = () => ["/admin/customization"];
 
 const getForwardHeaders = (request: NextRequest) => {
   const headers: Record<string, string> = {

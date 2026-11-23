@@ -17,8 +17,8 @@ export default function ProductSlugRedirect() {
   }, [params?.slug, router]);
 
   return (
-    <main className="flex min-h-[320px] items-center justify-center bg-[#f6f7fb]">
-      <div className="h-[160px] w-[80%] animate-pulse bg-white" />
+    <main className="flex min-h-[320px] items-center justify-center bg-[#fafafa]">
+      <div className="h-[160px] w-[92%] max-w-7xl animate-pulse rounded-[28px] bg-white" />
     </main>
   );
 }

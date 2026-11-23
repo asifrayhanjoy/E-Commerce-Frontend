@@ -11,7 +11,7 @@ export const emptySiteCustomization: SiteCustomization = {
 };
 
 export const fetchSiteCustomization = async () => {
-  const response = await fetch(`/api/site/customization?ts=${Date.now()}`, {
+  const response = await fetch("/api/site/customization", {
     cache: "no-store",
   });
   const data = await response.json().catch(() => ({}));

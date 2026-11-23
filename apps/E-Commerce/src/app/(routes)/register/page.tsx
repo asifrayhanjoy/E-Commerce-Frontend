@@ -6,15 +6,31 @@ import React, { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Eye, EyeOff } from "lucide-react";
 import GoogleButton from "@/components/auth/GoogleButton";
+import AuthShell from "@/components/auth/AuthShell";
 
 type FormData = {
-  name: string;
+  firstName: string;
+  lastName: string;
+  mobileNumber: string;
   email: string;
   password: string;
+  confirmPassword: string;
 };
+
+const toAuthPayload = (data: FormData) => ({
+  name: `${data.firstName.trim()} ${data.lastName.trim()}`,
+  email: data.email.trim(),
+  password: data.password,
+});
+
+const labelClassName = "mb-2 block text-sm font-semibold text-slate-200";
+const inputClassName =
+  "w-full rounded-xl border border-slate-700 bg-[#0b1120] px-4 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-sky-400 focus:bg-[#111827] focus:ring-4 focus:ring-sky-400/10";
+const errorClassName = "mt-1 text-sm font-medium text-rose-300";
 
 const Register = () => {
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [canResend, setCanResend] = useState(false);
@@ -26,7 +42,12 @@ const Register = () => {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const router = useRouter();
 
-  const { register, handleSubmit, formState: { errors }, } = useForm<FormData>();
+  const {
+    register,
+    handleSubmit,
+    getValues,
+    formState: { errors },
+  } = useForm<FormData>({ mode: "onTouched" });
 
   // Countdown timer — restarts whenever OTP screen opens or resend triggered
   useEffect(() => {
@@ -46,17 +67,15 @@ const Register = () => {
   }, [showOtp, timerKey]);
 
   // Step 1 — Submit registration form → send OTP to email
-  const onSubmit = async (data: FormData) => { setServerError(null); setLoading(true);
+  const onSubmit = async (data: FormData) => {
+    setServerError(null);
+    setLoading(true);
     try {
       const res = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          password: data.password,
-        }),
+        body: JSON.stringify(toAuthPayload(data)),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || "Failed to send OTP");
@@ -96,11 +115,7 @@ const Register = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          name: userData.name,
-          email: userData.email,
-          password: userData.password,
-        }),
+        body: JSON.stringify(toAuthPayload(userData)),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || "Failed to resend OTP");
@@ -128,12 +143,7 @@ const Register = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          email: userData.email,
-          otp: otpValue,
-          name: userData.name,
-          password: userData.password,
-        }),
+        body: JSON.stringify({ ...toAuthPayload(userData), otp: otpValue }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.message || "Invalid OTP");
@@ -148,151 +158,250 @@ const Register = () => {
   };
 
   return (
-    <div className="w-full py-10 min-h-[85vh] bg-[#f1f1f1]">
-      <h1 className="text-4xl font-semibold text-black text-center">
-        Register
-      </h1>
-      <p className="text-center text-lg font-medium py-3 text-[#00000099]">
-        Home . Register
-      </p>
-
-      <div className="w-full flex justify-center">
-        <div className="md:w-[480px] p-8 bg-white shadow rounded-lg">
-
-          {!showOtp ? (
-            /* ── Step 1: Registration Form ── */
-            <>
-              <h3 className="text-3xl font-semibold text-center mb-2">
-                Register to Eshop
-              </h3>
-              <p className="text-center text-gray-500 mb-4">
+    <AuthShell
+      eyebrow={showOtp ? "SECURE VERIFICATION" : "JOIN ARJ GROUP"}
+      title={showOtp ? "Verify your email" : "Create your account"}
+      description={
+        showOtp
+          ? "Confirm your email to finish creating your account."
+          : "Create an account to discover trusted sellers and keep your shopping in one place."
+      }
+    >
+      {!showOtp ? (
+        <>
+              <p className="mb-5 text-center text-sm text-slate-400">
                 Already have an account?{" "}
-                <Link href="/login" style={{ color: "#3b82f6" }} className="font-medium">
+                <Link
+                  href="/login"
+                  className="font-bold text-sky-300 underline decoration-sky-400 underline-offset-4 transition-colors hover:text-sky-200"
+                >
                   Sign in
                 </Link>
               </p>
 
               <GoogleButton />
 
-              <div className="flex items-center my-5 text-gray-400 text-sm">
-                <div className="flex-1 border-t border-gray-300" />
-                <span className="px-3">or Sign up with Email</span>
-                <div className="flex-1 border-t border-gray-300" />
+              <div className="my-6 flex items-center gap-4 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
+                <span className="h-px flex-1 bg-slate-700" />
+                <span>or sign up with email</span>
+                <span className="h-px flex-1 bg-slate-700" />
               </div>
 
               {serverError && (
-                <p className="text-red-500 text-sm text-center mb-3">{serverError}</p>
+                <p role="alert" className="mb-4 text-center text-sm font-medium text-rose-300">{serverError}</p>
               )}
 
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <label className="block text-gray-700 mb-1">Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter your full name"
-                  className="w-full px-4 py-3 bg-blue-50 border border-blue-100 rounded-lg outline-none focus:border-blue-400 transition-colors text-gray-800 mb-1"
-                  {...register("name", {
-                    required: "Name is required",
-                    minLength: { value: 2, message: "Name must be at least 2 characters" },
-                  })}
-                />
-                {errors.name && (
-                  <p className="text-red-500 text-sm mb-2">{String(errors.name.message)}</p>
-                )}
+              <form onSubmit={handleSubmit(onSubmit)} className="auth-form space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="register-first-name" className={labelClassName}>First Name</label>
+                    <input
+                      id="register-first-name"
+                      type="text"
+                      autoComplete="given-name"
+                      placeholder="First name"
+                      aria-invalid={Boolean(errors.firstName)}
+                      className={inputClassName}
+                      {...register("firstName", {
+                        required: "First name is required.",
+                        validate: (value) => Boolean(value.trim()) || "First name is required.",
+                      })}
+                    />
+                    {errors.firstName && (
+                      <p className={errorClassName}>{String(errors.firstName.message)}</p>
+                    )}
+                  </div>
 
-                <label className="block text-gray-700 mt-3 mb-1">Email</label>
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="w-full px-4 py-3 bg-blue-50 border border-blue-100 rounded-lg outline-none focus:border-blue-400 transition-colors text-gray-800 mb-1"
-                  {...register("email", {
-                    required: "Email is required",
-                    pattern: {
-                      value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/,
-                      message: "Invalid email address",
-                    },
-                  })}
-                />
-                {errors.email && (
-                  <p className="text-red-500 text-sm mb-2">{String(errors.email.message)}</p>
-                )}
+                  <div>
+                    <label htmlFor="register-last-name" className={labelClassName}>Last Name</label>
+                    <input
+                      id="register-last-name"
+                      type="text"
+                      autoComplete="family-name"
+                      placeholder="Last name"
+                      aria-invalid={Boolean(errors.lastName)}
+                      className={inputClassName}
+                      {...register("lastName", {
+                        required: "Last name is required.",
+                        validate: (value) => Boolean(value.trim()) || "Last name is required.",
+                      })}
+                    />
+                    {errors.lastName && (
+                      <p className={errorClassName}>{String(errors.lastName.message)}</p>
+                    )}
+                  </div>
+                </div>
 
-                <label className="block text-gray-700 mt-3 mb-1">Password</label>
-                <div className="relative">
+                <div>
+                  <label htmlFor="register-mobile" className={labelClassName}>Mobile Number</label>
                   <input
-                    type={passwordVisible ? "text" : "password"}
-                    placeholder="Min. 6 characters"
-                    className="w-full px-4 py-3 bg-blue-50 border border-blue-100 rounded-lg outline-none focus:border-blue-400 transition-colors text-gray-800 pr-12"
-                    {...register("password", {
-                      required: "Password is required",
-                      minLength: { value: 6, message: "Password must be at least 6 characters" },
+                    id="register-mobile"
+                    type="tel"
+                    autoComplete="tel"
+                    placeholder="Enter your mobile number"
+                    aria-invalid={Boolean(errors.mobileNumber)}
+                    className={inputClassName}
+                    {...register("mobileNumber", {
+                      required: "Mobile number is required.",
+                      pattern: {
+                        value: /^\+?[0-9][0-9\s().-]{6,19}$/,
+                        message: "Enter a valid mobile number.",
+                      },
                     })}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setPasswordVisible(!passwordVisible)}
-                    className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600"
-                  >
-                    {passwordVisible ? <Eye size={18} /> : <EyeOff size={18} />}
-                  </button>
+                  {errors.mobileNumber && (
+                    <p className={errorClassName}>{String(errors.mobileNumber.message)}</p>
+                  )}
                 </div>
-                {errors.password && (
-                  <p className="text-red-500 text-sm mt-1">{String(errors.password.message)}</p>
-                )}
+
+                <div>
+                  <label htmlFor="register-email" className={labelClassName}>Email Address</label>
+                  <input
+                    id="register-email"
+                    type="email"
+                    autoComplete="email"
+                    placeholder="Enter your email"
+                    aria-invalid={Boolean(errors.email)}
+                    className={inputClassName}
+                    {...register("email", {
+                      required: "Email address is required.",
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/,
+                        message: "Enter a valid email address.",
+                      },
+                    })}
+                  />
+                  {errors.email && (
+                    <p className={errorClassName}>{String(errors.email.message)}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="register-password" className={labelClassName}>Password</label>
+                  <div className="relative">
+                    <input
+                      id="register-password"
+                      type={passwordVisible ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="Create a strong password"
+                      aria-invalid={Boolean(errors.password)}
+                      className={`${inputClassName} pr-12`}
+                      {...register("password", {
+                        required: "Password is required.",
+                        minLength: {
+                          value: 7,
+                          message: "Password must be at least 7 characters.",
+                        },
+                        deps: "confirmPassword",
+                        validate: {
+                          uppercase: (value) =>
+                            /[A-Z]/.test(value) || "Add at least one uppercase letter.",
+                          lowercase: (value) =>
+                            /[a-z]/.test(value) || "Add at least one lowercase letter.",
+                          number: (value) =>
+                            /\d/.test(value) || "Add at least one number.",
+                          special: (value) =>
+                            /[^A-Za-z0-9\s]/.test(value) ||
+                            "Add a special character, such as @.",
+                        },
+                      })}
+                    />
+                    <button
+                      type="button"
+                      aria-label={passwordVisible ? "Hide password" : "Show password"}
+                      onClick={() => setPasswordVisible((visible) => !visible)}
+                      className="absolute inset-y-0 right-2 grid w-10 place-items-center rounded-xl text-slate-400 transition-all duration-200 hover:bg-slate-800 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
+                    >
+                      {passwordVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    Use at least 7 characters, including uppercase and lowercase letters, a number, and a symbol (for example @).
+                  </p>
+                  {errors.password && (
+                    <p className={errorClassName}>{String(errors.password.message)}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="register-confirm-password" className={labelClassName}>Confirm Password</label>
+                  <div className="relative">
+                    <input
+                      id="register-confirm-password"
+                      type={confirmPasswordVisible ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="Re-enter your password"
+                      aria-invalid={Boolean(errors.confirmPassword)}
+                      className={`${inputClassName} pr-12`}
+                      {...register("confirmPassword", {
+                        required: "Please confirm your password.",
+                        validate: (value) =>
+                          value === getValues("password") || "Passwords do not match.",
+                      })}
+                    />
+                    <button
+                      type="button"
+                      aria-label={confirmPasswordVisible ? "Hide confirmation" : "Show confirmation"}
+                      onClick={() => setConfirmPasswordVisible((visible) => !visible)}
+                      className="absolute inset-y-0 right-2 grid w-10 place-items-center rounded-xl text-slate-400 transition-all duration-200 hover:bg-slate-800 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
+                    >
+                      {confirmPasswordVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+                    </button>
+                  </div>
+                  {errors.confirmPassword && (
+                    <p className={errorClassName}>{String(errors.confirmPassword.message)}</p>
+                  )}
+                </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-black text-white py-3 rounded-lg text-lg mt-5 cursor-pointer hover:bg-gray-900 transition-colors disabled:opacity-60"
+                  className="mt-2 w-full rounded-2xl bg-[#2563eb] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? "Sending OTP..." : "Register"}
                 </button>
               </form>
             </>
-          ) : (
-            /* ── Step 2: OTP Verification ── */
-            <>
-              <h3 className="text-2xl font-semibold text-center mb-2">
-                Verify Your Email
-              </h3>
-              <p className="text-center text-gray-500 text-sm mb-6">
+      ) : (
+        <>
+              <p className="mb-6 text-center text-sm leading-6 text-slate-300">
                 We sent a 4-digit OTP to{" "}
-                <span className="font-medium text-gray-800">{userData?.email}</span>
+                <span className="font-medium text-slate-100">{userData?.email}</span>
               </p>
 
               {serverError && (
-                <p className="text-red-500 text-sm text-center mb-3">{serverError}</p>
+                <p role="alert" className="mb-4 text-center text-sm font-medium text-rose-300">{serverError}</p>
               )}
 
               {/* 4 OTP input boxes */}
-              <div className="flex justify-center gap-3 mb-5">
+              <div className="mb-6 flex justify-center gap-3">
                 {otp.map((digit, index) => (
-                  <input key={index} ref={(el) => { inputRefs.current[index] = el; }} type="text" inputMode="numeric" maxLength={1} value={digit}
+                  <input key={index} ref={(el) => { inputRefs.current[index] = el; }} type="text" inputMode="numeric" maxLength={1} aria-label={`OTP digit ${index + 1}`} value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                    className="w-14 h-14 text-center text-2xl font-semibold border-2 border-gray-300 rounded-lg outline-none focus:border-blue-500 bg-blue-50 transition-colors"
+                    className="auth-otp-input size-14 text-center text-2xl font-bold text-slate-100"
                   />
                 ))}
               </div>
 
               {/* Countdown / Resend */}
-              <div className="text-center mb-5 text-sm text-gray-500">
+              <div className="mb-5 text-center text-sm text-slate-300">
                 {timer > 0 ? (
                   <span>
                     Resend OTP in{" "}
-                    <span className="font-semibold text-gray-800">{timer}s</span>
+                    <span className="font-semibold text-slate-100">{timer}s</span>
                   </span>
                 ) : (
                   <button
                     onClick={resendOtp}
-                    className="font-medium hover:underline"
-                    style={{ color: "#3b82f6" }}
+                    className="font-bold text-sky-300 underline-offset-4 hover:underline"
                   >
                     Resend OTP
                   </button>
                 )}
               </div>
 
-              <button onClick={verifyOtp} disabled={loading} className="w-full bg-black text-white py-3 rounded-lg text-lg cursor-pointer hover:bg-gray-900 transition-colors disabled:opacity-60">
+              <button onClick={verifyOtp} disabled={loading} className="w-full rounded-2xl bg-[#2563eb] py-3.5 text-sm font-bold text-white shadow-lg transition duration-200 hover:-translate-y-0.5 hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60">
                 {loading ? "Verifying..." : "Verify OTP"}
               </button>
 
@@ -301,15 +410,12 @@ const Register = () => {
                   setServerError(null);
                   setOtp(["", "", "", ""]);
                 }}
-                className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                className="mt-3 w-full rounded-xl py-3 text-sm font-semibold text-slate-400 transition-colors hover:text-slate-100">
                 ← Back to registration
               </button>
             </>
-          )}
-
-        </div>
-      </div>
-    </div>
+      )}
+    </AuthShell>
   );
 };
 

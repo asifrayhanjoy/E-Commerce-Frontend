@@ -51,12 +51,15 @@ export default function HeaderUser() {
   }, [accountAvatarUrl, siteCustomization.logoUrl]);
 
   return (
-    <>
-      <div className="flex items-center gap-2">
-        {/* Profile */}
+    <div className="flex items-center gap-4 sm:gap-6">
+      <div className="flex items-center gap-2.5">
         {!isLoading && user ? (
           <>
-            <Link href="/profile" className="border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full">
+            <Link
+              href="/profile"
+              aria-label="Open your profile"
+              className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-[#111827] p-0.5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-sky-300/50 hover:shadow-md"
+            >
               {userAvatarUrl ? (
                 <img
                   src={userAvatarUrl}
@@ -65,63 +68,62 @@ export default function HeaderUser() {
                   onError={() => setFailedAvatarUrl(userAvatarUrl)}
                 />
               ) : (
-                <ProfileIcon size={24} color="#333" />
+                <ProfileIcon size={24} color="#38bdf8" />
               )}
             </Link>
-            <Link href="/profile" className="leading-tight">
-              <span className="block text-sm font-medium text-gray-500">
-                Hello,
+            <Link href="/profile" className="hidden leading-tight sm:block">
+              <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Welcome back
               </span>
-              <span className="text-[14px] font-semibold text-gray-800">
-                {user?.name}
+              <span className="mt-1 block max-w-28 truncate text-sm font-bold text-slate-100 transition-colors hover:text-sky-300">
+                {user?.name || "My account"}
               </span>
             </Link>
           </>
-        )
-      :(
-        <>
+        ) : (
+          <>
+            <Link
+              href="/login"
+              aria-label="Sign in"
+              className="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-[#111827] text-slate-300 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-sky-300/50 hover:text-sky-300 hover:shadow-md"
+            >
+              <ProfileIcon size={22} color="currentColor" />
+            </Link>
+            <Link href="/login" className="hidden leading-tight sm:block">
+              <span className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                Welcome
+              </span>
+              <span className="mt-1 block text-sm font-bold text-slate-100 transition-colors hover:text-sky-300">
+                Sign in
+              </span>
+            </Link>
+          </>
+        )}
+      </div>
+
+      <div className="flex items-center gap-1">
         <Link
-          href="/login"
-          className="border-2 w-[50px] h-[50px] flex items-center justify-center rounded-full"
+          href="/wishlist"
+          aria-label={`Wishlist, ${displayWishlistCount} items`}
+          className="group relative grid size-11 place-items-center rounded-full text-slate-200 transition duration-200 hover:bg-emerald-950/60 hover:text-emerald-300"
         >
-          <ProfileIcon size={24} color="#333" />
-        </Link>
-         <Link href="/login" className="leading-tight">
-          <span className="block text-sm font-medium text-gray-500">
-            Hello,
-          </span>
-          <span className="text-[18px] font-semibold text-gray-800">
-            Sign In
+          <HeartIcon size={28} color="currentColor" />
+          <span className="badge-pop absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-[#070b14] bg-amber-400 px-1 text-[10px] font-extrabold leading-none text-[#111827] shadow-md transition-transform duration-200 group-hover:scale-110">
+            {displayWishlistCount > 9 ? "9+" : displayWishlistCount}
           </span>
         </Link>
-        </>
-      )
-      }
 
-       
-      </div>
-
-      <div className="flex items-center gap-5">
-        {/* Wishlist */}
-        <Link href="/wishlist" className="relative">
-          <HeartIcon size={26} color="#555" />
-          <div className="w-6 h-6 border-2 border-white bg-red-500 rounded-full absolute -top-2 -right-3 flex items-center justify-center">
-            <span className="text-white font-medium text-sm">
-              {displayWishlistCount > 9 ? "9+" : displayWishlistCount}
-            </span>
-          </div>
-        </Link>
-
-        {/* Cart */}
-        <Link href="/cart" className="relative">
-          <CartIcon size={26} color="#555" />
-          <div className="w-6 h-6 border-2 border-white bg-red-500 rounded-full absolute -top-2 -right-3 flex items-center justify-center">
-            <span className="text-white font-medium text-sm">
-              {displayCartCount > 9 ? "9+" : displayCartCount}
-            </span>
-          </div>
+        <Link
+          href="/cart"
+          aria-label={`Cart, ${displayCartCount} items`}
+          className="group relative grid size-11 place-items-center rounded-full text-slate-200 transition duration-200 hover:bg-blue-950/60 hover:text-sky-300"
+        >
+          <CartIcon size={28} color="currentColor" />
+          <span className="badge-pop absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-[#070b14] bg-sky-300 px-1 text-[10px] font-extrabold leading-none text-[#07111f] shadow-md transition-transform duration-200 group-hover:scale-110">
+            {displayCartCount > 9 ? "9+" : displayCartCount}
+          </span>
         </Link>
       </div>
-    </>
+    </div>
   );
 }

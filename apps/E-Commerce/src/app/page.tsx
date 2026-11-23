@@ -11,7 +11,7 @@ import {
   getShopCoverImage,
 } from "@/utils/shopImages";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, Heart, MapPin, ShoppingBag, Star } from "lucide-react";
+import { ArrowRight, Eye, MapPin, ShoppingBag, Star } from "lucide-react";
 import Link from "next/link";
 
 type HomeProduct = {
@@ -262,7 +262,7 @@ const ProductSkeletonGrid = () => (
     {Array.from({ length: 10 }).map((_, index) => (
       <div
         key={index}
-        className="h-[430px] animate-pulse rounded-lg bg-gray-300"
+        className="skeleton-shimmer h-[430px] rounded-3xl"
       />
     ))}
   </div>
@@ -281,21 +281,28 @@ const ProductSection = ({
   isLoading: boolean;
   isError: boolean;
 }) => (
-  <section className="mb-10">
-    <div className="mb-8">
+  <section className="mb-14">
+    <div className="mb-7 flex items-end justify-between gap-4">
       <SectionTitle title={title} />
+      <Link
+        href={section === "top-offers" ? "/offers" : "/products"}
+        className="group mb-1 inline-flex shrink-0 items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-blue-700"
+      >
+        View all
+        <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+      </Link>
     </div>
 
     {isLoading && <ProductSkeletonGrid />}
 
     {!isLoading && isError && (
-      <div className="flex min-h-[160px] items-center justify-center rounded-md bg-white px-6 text-center text-base font-semibold text-slate-500">
+      <div className="flex min-h-[160px] items-center justify-center rounded-3xl border border-slate-100 bg-white px-6 text-center text-base font-semibold text-slate-500 shadow-sm">
         Products could not be loaded from the backend.
       </div>
     )}
 
     {!isLoading && !isError && products.length === 0 && (
-      <div className="flex min-h-[160px] items-center justify-center rounded-md bg-white px-6 text-center text-base font-semibold text-slate-500">
+      <div className="flex min-h-[160px] items-center justify-center rounded-3xl border border-slate-100 bg-white px-6 text-center text-base font-semibold text-slate-500 shadow-sm">
         No products found.
       </div>
     )}
@@ -318,12 +325,12 @@ const ShopSkeletonGrid = () => (
     {Array.from({ length: 6 }).map((_, index) => (
       <div
         key={index}
-        className="h-[430px] animate-pulse rounded-lg bg-gray-300"
+        className="skeleton-shimmer h-[430px] rounded-3xl"
       >
-        <div className="mx-5 mt-5 h-[248px] rounded bg-slate-100" />
-        <div className="mx-5 mt-5 h-5 rounded bg-slate-100" />
-        <div className="mx-5 mt-4 h-6 rounded bg-slate-100" />
-        <div className="mx-5 mt-5 h-5 rounded bg-slate-100" />
+        <div className="skeleton-shimmer mx-5 mt-5 h-[248px] rounded-2xl" />
+        <div className="skeleton-shimmer mx-5 mt-5 h-5 rounded" />
+        <div className="skeleton-shimmer mx-5 mt-4 h-6 rounded" />
+        <div className="skeleton-shimmer mx-5 mt-5 h-5 rounded" />
       </div>
     ))}
   </div>
@@ -353,80 +360,62 @@ const TopShopCard = ({ shop }: { shop: HomeShop }) => {
   const shopHref = shopId ? `/shops/${encodeURIComponent(shopId)}` : "/shops";
 
   return (
-    <article className="relative h-[430px] w-full overflow-hidden rounded-lg bg-white shadow-[0_18px_24px_-18px_rgba(15,23,42,0.45)]">
+    <article className="fade-up group relative flex h-[430px] w-full flex-col overflow-hidden rounded-[24px] border border-slate-200/80 bg-white shadow-[0_18px_38px_-28px_rgba(15,23,42,0.48)] transition duration-500 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_28px_58px_-30px_rgba(15,23,42,0.38)]">
       {category && (
-        <div className="absolute right-4 top-4 z-10 max-w-[72%] truncate rounded-full bg-yellow-400 px-3 py-1.5 text-sm font-bold leading-none text-slate-950">
+        <div className="absolute left-4 top-4 z-10 max-w-[72%] truncate rounded-full border border-white/60 bg-white/90 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-blue-700 shadow-sm backdrop-blur">
           {category}
         </div>
       )}
 
-      <div className="flex h-[278px] w-full bg-white pl-5 pr-3 pt-5">
+      <div className="relative h-[260px] w-full shrink-0 overflow-hidden bg-[radial-gradient(ellipse_at_50%_45%,#ffffff_0%,#f8f7f3_100%)]">
         <Link
           href={shopHref}
-          className="block h-[248px] min-w-0 flex-1 overflow-hidden bg-white"
+          className="image-zoom block h-full w-full overflow-hidden"
         >
           {shopImage ? (
             <img
               src={shopImage}
               alt={shop.name || "Shop image"}
-              className="h-full w-full object-cover object-top"
+              className="h-full w-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-slate-900 text-5xl font-black text-white">
+            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-950 via-slate-800 to-blue-700 text-5xl font-black text-white">
               {shop.name?.trim()?.charAt(0)?.toUpperCase() || "S"}
             </div>
           )}
         </Link>
 
-        <div className="flex w-11 shrink-0 flex-col items-center gap-3 pt-16">
-          <button
-            type="button"
-            aria-label="Follow shop"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md"
-          >
-            <Heart
-              className="cursor-pointer text-red-500 transition hover:scale-110"
-              size={24}
-              fill="red"
-            />
-          </button>
-
+        <div className="absolute bottom-4 right-4 flex flex-col gap-2 sm:translate-x-2 sm:opacity-0 sm:transition-all sm:duration-300 sm:group-hover:translate-x-0 sm:group-hover:opacity-100 sm:group-focus-within:translate-x-0 sm:group-focus-within:opacity-100">
           <Link
             href={shopHref}
-            aria-label="View shop"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md"
+            aria-label="View shop details"
+            className="grid size-10 place-items-center rounded-full border border-slate-700/80 bg-[#111827]/95 text-slate-200 shadow-lg backdrop-blur transition duration-200 hover:scale-110 hover:border-sky-300/40 hover:bg-[#18243a] hover:text-sky-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300"
           >
-            <Eye
-              className="cursor-pointer text-slate-900 transition hover:scale-110"
-              size={24}
-            />
+            <Eye size={21} />
           </Link>
 
           <Link
             href={shopHref}
             aria-label="Visit shop"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md"
+            className="grid size-10 place-items-center rounded-full border border-slate-700/80 bg-[#111827]/95 text-sky-300 shadow-lg backdrop-blur transition duration-200 hover:scale-110 hover:border-sky-300/40 hover:bg-[#18243a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/50"
           >
-            <ShoppingBag
-              className="cursor-pointer text-orange-600 transition hover:scale-110"
-              size={24}
-            />
+            <ShoppingBag size={21} />
           </Link>
         </div>
       </div>
 
-      <div className="h-[152px] px-5 pb-5 pt-3">
+      <div className="flex min-h-0 flex-1 flex-col px-5 pb-5 pt-4">
         <Link href={shopHref} className="block">
-          <p className="flex min-w-0 items-center gap-1.5 truncate text-sm font-semibold text-blue-700">
-            <MapPin size={14} className="shrink-0" />
+          <p className="flex min-w-0 items-center gap-1.5 truncate text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-700">
+            <MapPin size={13} className="shrink-0" />
             <span className="truncate">{address || category || "Top Shop"}</span>
           </p>
-          <h3 className="mt-2 line-clamp-1 text-lg font-bold text-slate-950">
+          <h3 className="mt-2 line-clamp-1 text-base font-bold tracking-tight text-slate-950 transition-colors duration-200 group-hover:text-blue-700">
             {shop.name}
           </h3>
         </Link>
 
-        <div className="mt-2 flex items-center gap-1">
+        <div className="mt-3 flex items-center gap-1">
           {Array.from({ length: 5 }).map((_, index) => (
             <Star
               key={index}
@@ -444,15 +433,15 @@ const TopShopCard = ({ shop }: { shop: HomeShop }) => {
           <div className="flex min-w-0 items-end gap-2">
             <span
               aria-label={formatFollowers(followers)}
-              className="whitespace-nowrap text-[22px] font-black leading-none text-slate-950"
+              className="whitespace-nowrap text-xl font-black leading-none tracking-tight text-slate-950"
             >
               {followers}
             </span>
-            <span className="truncate pb-0.5 text-base font-bold text-slate-400">
+            <span className="truncate pb-0.5 text-xs font-semibold text-slate-400">
               {followers === 1 ? "Follower" : "Followers"}
             </span>
           </div>
-          <span className="shrink-0 whitespace-nowrap pb-0.5 text-base font-bold text-emerald-600">
+          <span className="shrink-0 whitespace-nowrap pb-0.5 text-[10px] font-bold text-slate-400">
             {reviewCount} reviews
           </span>
         </div>
@@ -470,21 +459,28 @@ const TopShopsSection = ({
   isLoading: boolean;
   isError: boolean;
 }) => (
-  <section className="mb-10">
-    <div className="mb-8">
+  <section className="mb-14">
+    <div className="mb-7 flex items-end justify-between gap-4">
       <SectionTitle title="Top Shops" />
+      <Link
+        href="/shops"
+        className="group mb-1 inline-flex shrink-0 items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-blue-700"
+      >
+        View all
+        <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+      </Link>
     </div>
 
     {isLoading && <ShopSkeletonGrid />}
 
     {!isLoading && isError && (
-      <div className="flex min-h-[160px] items-center justify-center rounded-md bg-white px-6 text-center text-base font-semibold text-slate-500">
+      <div className="flex min-h-[160px] items-center justify-center rounded-3xl border border-slate-100 bg-white px-6 text-center text-base font-semibold text-slate-500 shadow-sm">
         Shops could not be loaded from the backend.
       </div>
     )}
 
     {!isLoading && !isError && shops.length === 0 && (
-      <div className="flex min-h-[160px] items-center justify-center rounded-md bg-white px-6 text-center text-base font-semibold text-slate-500">
+      <div className="flex min-h-[160px] items-center justify-center rounded-3xl border border-slate-100 bg-white px-6 text-center text-base font-semibold text-slate-500 shadow-sm">
         No shops found.
       </div>
     )}
@@ -522,10 +518,10 @@ export default function Index() {
   });
 
   return (
-    <main className="min-h-screen bg-[#f7f7f7]">
+    <main className="min-h-screen bg-[#fafafa]">
       <Hero />
 
-      <div className="md:w-[80%] w-[90%] my-10 m-auto">
+      <div className="mx-auto my-14 w-[92%] max-w-[1320px] md:my-16">
         <ProductSection
           title="Suggested Products"
           section="suggested"

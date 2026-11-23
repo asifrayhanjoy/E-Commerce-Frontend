@@ -32,14 +32,8 @@ const backendBases = [
 ].filter(Boolean) as string[];
 
 const customizationUrls = [
-  process.env.NEXT_PUBLIC_ADMIN_CUSTOMIZATION_URL,
-  ...(process.env.NODE_ENV === "production"
-    ? []
-    : ["http://localhost:6003/api/admin/customization"]),
-  ...backendBases.flatMap((base) => [
-    `${base}/admin/customization`,
-    `${base}/auth/admin/customization`,
-  ]),
+  process.env.NEXT_PUBLIC_SITE_CUSTOMIZATION_URL,
+  ...backendBases.map((base) => `${base}/site/customization`),
 ].filter(Boolean) as string[];
 
 const backendRootCandidates =

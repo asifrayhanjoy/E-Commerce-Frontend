@@ -58,24 +58,40 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const storageKey = useMemo(() => getStorageKey(user), [user]);
   const [wishlistItems, setWishlistItems] = useState<WishlistProduct[]>([]);
+  const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
 
   useEffect(() => {
+    let nextItems: WishlistProduct[] = [];
+
     try {
       const savedWishlist = window.localStorage.getItem(storageKey);
       if (savedWishlist) {
-        setWishlistItems(JSON.parse(savedWishlist));
-        return;
+        const parsedItems: unknown = JSON.parse(savedWishlist);
+        if (Array.isArray(parsedItems)) {
+          nextItems = parsedItems;
+        } else {
+          console.error("Stored wishlist data is not an array.");
+        }
       }
-
-      setWishlistItems([]);
-    } catch {
-      setWishlistItems([]);
+    } catch (error) {
+      console.error("Failed to load wishlist from local storage.", error);
     }
+
+    setWishlistItems(nextItems);
+    setLoadedStorageKey(storageKey);
   }, [storageKey]);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(wishlistItems));
-  }, [storageKey, wishlistItems]);
+    if (loadedStorageKey !== storageKey) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(wishlistItems));
+    } catch (error) {
+      console.error("Failed to save wishlist to local storage.", error);
+    }
+  }, [loadedStorageKey, storageKey, wishlistItems]);
 
   const isInWishlist = useCallback(
     (product: WishlistProduct) => {

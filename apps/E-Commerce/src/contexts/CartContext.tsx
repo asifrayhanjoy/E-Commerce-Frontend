@@ -42,6 +42,7 @@ type CartContextValue = {
   cartItems: CartItem[];
   cartCount: number;
   cartTotal: number;
+  isReady: boolean;
   addToCart: (product: CartProduct, quantity?: number) => void;
   removeFromCart: (product: CartProduct) => void;
   updateCartQuantity: (product: CartProduct, quantity: number) => void;
@@ -70,24 +71,40 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const storageKey = useMemo(() => getStorageKey(user), [user]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [loadedStorageKey, setLoadedStorageKey] = useState<string | null>(null);
 
   useEffect(() => {
+    let nextItems: CartItem[] = [];
+
     try {
       const savedCart = window.localStorage.getItem(storageKey);
       if (savedCart) {
-        setCartItems(JSON.parse(savedCart));
-        return;
+        const parsedItems: unknown = JSON.parse(savedCart);
+        if (Array.isArray(parsedItems)) {
+          nextItems = parsedItems;
+        } else {
+          console.error("Stored cart data is not an array.");
+        }
       }
-
-      setCartItems([]);
-    } catch {
-      setCartItems([]);
+    } catch (error) {
+      console.error("Failed to load cart from local storage.", error);
     }
+
+    setCartItems(nextItems);
+    setLoadedStorageKey(storageKey);
   }, [storageKey]);
 
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(cartItems));
-  }, [cartItems, storageKey]);
+    if (loadedStorageKey !== storageKey) {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(cartItems));
+    } catch (error) {
+      console.error("Failed to save cart to local storage.", error);
+    }
+  }, [cartItems, loadedStorageKey, storageKey]);
 
   const syncCartChange = useCallback(
     (product: CartProduct, action: "add" | "remove" | "set", quantity = 1) => {
@@ -208,12 +225,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       ),
     [cartItems]
   );
+  const isReady = loadedStorageKey === storageKey;
 
   const value = useMemo(
     () => ({
       cartItems,
       cartCount,
       cartTotal,
+      isReady,
       addToCart,
       removeFromCart,
       updateCartQuantity,
@@ -226,6 +245,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       cartCount,
       cartItems,
       cartTotal,
+      isReady,
       clearCart,
       getCartQuantity,
       isInCart,

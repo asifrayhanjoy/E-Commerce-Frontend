@@ -1,20 +1,13 @@
-import React from "react";
-import TitleBorder from "./TitleBorder";
-
 const SectionTitle = ({ title }: { title: string }) => {
   return (
-    <div className="relative">
-      <h1
-        className="relative z-10 leading-none tracking-tight"
-        style={{
-          fontSize: "31px",
-          fontWeight: 900,
-        }}
-      >
+    <div className="fade-up">
+      <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.24em] text-blue-700">
+        ARJ edit
+      </p>
+      <h2 className="text-2xl font-bold leading-tight tracking-[-0.04em] text-slate-950 sm:text-3xl">
         {title}
-      </h1>
-
-      <TitleBorder className="absolute top-[46%]" />
+      </h2>
+      <div className="mt-4 h-px w-full max-w-[220px] bg-gradient-to-r from-blue-600 via-emerald-500/45 to-transparent" />
     </div>
   );
 };
